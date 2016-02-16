@@ -49,7 +49,6 @@ public class ImageWindow extends JFrame {
 
 		protected void pushImage(Mat image) {
 			myImage = toBufferedImage(image);
-			System.out.println(myImage.getHeight());
 			this.repaint();
 
 		}
