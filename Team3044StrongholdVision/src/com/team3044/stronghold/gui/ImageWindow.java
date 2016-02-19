@@ -19,8 +19,8 @@ public class ImageWindow extends JFrame {
 
 	public ImageWindow(String name, int width, int height) {
 		setTitle(name);
-		setSize(width, height); // default size is 0,0
-		setLocation(10, 200); // default is 0,0 (top left corner)
+		setSize(width, height); 
+		setLocation(10, 200); 
 		Container pane = this.getContentPane();
 		p.setVisible(true);
 		pane.add(p);

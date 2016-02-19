@@ -61,8 +61,9 @@ public class Main {
 		Robot.setUseMDNS(true);
 		Robot.setTeam(3044);
 		NetworkTable visionTable = NetworkTable.getTable("SmartDashboard");
-
+		MatOfPoint contour;
 		int biggestRectid = 0;
+		ArrayList<Rect> boundingRects;
 		// System.out.println(v.open("http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg"));
 		while (window.isVisible()) {
 			v.read(frame);
@@ -89,12 +90,12 @@ public class Main {
 				Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE,
 						new Point(0, 0));
 
-				ArrayList<MatOfPoint2f> approxContours = new ArrayList<MatOfPoint2f>();
-				ArrayList<Rect> boundingRects = new ArrayList<Rect>();
+				//ArrayList<MatOfPoint2f> approxContours = new ArrayList<MatOfPoint2f>();
+				boundingRects = new ArrayList<Rect>();
 
 				for (int i = 0; i < contours.size(); i++) {
-					MatOfPoint2f approx = new MatOfPoint2f();
-					MatOfPoint contour = contours.get(i);
+					//MatOfPoint2f approx = new MatOfPoint2f();
+					contour = contours.get(i);
 					Rect r = Imgproc.boundingRect(contour);
 					// contour.convertTo(approx, CvType.CV_32FC2);
 					// Imgproc.approxPolyDP(approx, approx, 5, true);
