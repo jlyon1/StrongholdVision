@@ -50,7 +50,7 @@ public class Main {
 
 		ArrayList<Mat> channels = new ArrayList<Mat>();
 
-		ImageWindow window = new ImageWindow("Main Image", 640, 480);
+		ImageWindow window = new ImageWindow("Main Image", 335, 279);
 		window.show();
 
 		final int G_MIN = 50;
@@ -71,7 +71,7 @@ public class Main {
 				frame.copyTo(orig);
 				Core.split(frame, channels);
 				blank = Mat.zeros(channels.get(0).height(), channels.get(0).width(), channels.get(0).type());
-				Core.subtract(channels.get(2), new Scalar(10, 10, 10), temp);
+				Core.subtract(channels.get(2), new Scalar(0, 0, 0), temp);
 				Core.subtract(channels.get(1), temp, temp);
 
 				channels.set(0, blank);
@@ -108,32 +108,31 @@ public class Main {
 				for (int i = 0; i < boundingRects.size(); i++) {
 					Rect r = boundingRects.get(i);
 					if (r.size().area() > boundingRects.get(biggestRectid).size().area()
-							&& !(boundingRects.get(i).x > 290 && boundingRects.get(i).y > 220)) {
+							&& boundingRects.get(i).br().y < 220) {
 						biggestRectid = i;
 					} else {
-						Imgproc.rectangle(frame, r.tl(), r.br(), new Scalar(0, 0, 255), 1);
+						Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 0, 255), 1);
 					}
-
 				}
 				if (boundingRects.size() > 0) {
 					Rect r = boundingRects.get(biggestRectid);
 					System.out.println("Dist: " + r.y);
-					System.out.println("Center: " + (160 - (r.x + (r.width / 2.0))));
+					System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) + 4));
 					System.out.println(r.br());
 					System.out.println(true);
 					visionTable.putNumber("DIST", r.y);
-					visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0))));
+					visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + 4));
 					visionTable.putBoolean("TARGET", true);
-					if (!visionTable.getBoolean("ALIGNED", false)) {
-						Imgproc.rectangle(frame, r.tl(), r.br(), new Scalar(0, 255, 0), 1);
+					if (!(r.y > 130 && (160 - Math.abs((r.x + (r.width / 2.0)) + 7.5)) < 10)) {
+						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y), new Scalar(255, 0, 255), 1);
 					}else{
-						Imgproc.rectangle(frame, r.tl(), r.br(), new Scalar(0, 255, 0), -1);
+						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y), new Scalar(255, 0, 255), 1);
 					}
 				} else {
 					visionTable.putBoolean("TARGET", false);
 					System.out.println(false);
 				}
-				window.pushImage(frame);
+				window.pushImage(orig);
 				window.repaint();
 			}
 		}
