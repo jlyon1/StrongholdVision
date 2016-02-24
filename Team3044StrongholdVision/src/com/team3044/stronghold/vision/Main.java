@@ -124,9 +124,9 @@ public class Main {
 					visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + 4));
 					visionTable.putBoolean("TARGET", true);
 					if (!(r.y > 130 && (160 - Math.abs((r.x + (r.width / 2.0)) + 7.5)) < 10)) {
-						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y), new Scalar(255, 0, 255), 1);
+						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), 1);
 					}else{
-						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y), new Scalar(255, 0, 255), 1);
+						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), -1);
 					}
 				} else {
 					visionTable.putBoolean("TARGET", false);
