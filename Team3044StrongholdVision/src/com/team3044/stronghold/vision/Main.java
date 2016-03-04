@@ -22,17 +22,16 @@ import edu.wpi.first.wpilibj.networktables.NetworkTable;
 public class Main {
 	private BufferedImage myImage;
 
-	final static String Address = "http://10.30.44.26/axis-cgi/mjpg/video.cgi?dummy=test.mjpeg";
+	final static String Address = "http://10.30.44.26/axis-cgi/mjpg/video.cgi?test.mjpeg";
 
 	public static void main(String[] args) {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-		VideoCapture v = new VideoCapture("http://10.30.44.26/axis-cgi/mjpg/video.cgi?test.mjpeg");
+		VideoCapture v = new VideoCapture(Address);
 		v.open(Address);
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		if (v.isOpened()) {
@@ -51,7 +50,7 @@ public class Main {
 		ArrayList<Mat> channels = new ArrayList<Mat>();
 
 		ImageWindow window = new ImageWindow("Main Image", 335, 279);
-		window.show();
+		window.setVisible(true);
 
 		final int G_MIN = 50;
 		final int G_MAX = 255;
