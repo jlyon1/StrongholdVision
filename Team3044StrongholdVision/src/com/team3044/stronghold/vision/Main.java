@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
-import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -20,7 +19,6 @@ import edu.wpi.first.smartdashboard.robot.Robot;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 
 public class Main {
-	private BufferedImage myImage;
 
 	final static String Address = "http://10.30.44.26/axis-cgi/mjpg/video.cgi?test.mjpeg";
 	
