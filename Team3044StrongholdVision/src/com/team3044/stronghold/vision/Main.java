@@ -22,20 +22,25 @@ public class Main {
 
 	final static String Address = "http://10.30.44.26/axis-cgi/mjpg/video.cgi?test.mjpeg";
 	
+	public static double offset = 9;
+	
 	public static void processRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable, Mat orig){
 		if (boundingRects.size() > 0) {
 			Rect r = boundingRects.get(biggestRectid);
+			
 			System.out.println("Dist: " + r.y);
-			System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) + 4));
+			System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) + offset));
 			System.out.println(r.br());
-			System.out.println(true);
+			
 			visionTable.putNumber("DIST", r.y);
-			visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + 4));
+			visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + offset));
 			visionTable.putBoolean("TARGET", true);
+			//Draw the target:
+			//TODO: Update target Drawing, and onTargetCondidtions
 			if (!(r.y > 130 && (160 - Math.abs((r.x + (r.width / 2.0)) + 7.5)) < 10)) {
-				Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), 1);
+				Imgproc.rectangle(orig, new Point(r.tl().x,r.tl().y), new Point(r.br().x,r.br().y), new Scalar(255, 0, 255), 1);
 			}else{
-				Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), -1);
+				Imgproc.rectangle(orig, new Point(r.tl().x,r.tl().y), new Point(r.br().x,r.br().y), new Scalar(255, 0, 255), -1);
 			}
 		} else {
 			visionTable.putBoolean("TARGET", false);
@@ -85,6 +90,7 @@ public class Main {
 		ArrayList<Rect> boundingRects;
 		
 		while (window.isVisible()) {
+			System.out.println("-------- Start:"+System.currentTimeMillis() + "---------");
 			v.read(frame);
 			if (frame.size().width > 0) {
 				frame.copyTo(orig);
@@ -137,6 +143,7 @@ public class Main {
 
 				window.pushImage(orig);
 				window.repaint();
+				System.out.println("--------End: " + System.currentTimeMillis() + "---------");
 			}
 		}
 	}
