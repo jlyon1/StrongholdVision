@@ -89,17 +89,12 @@ public class Main {
 				Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE,
 						new Point(0, 0));
 
-				//ArrayList<MatOfPoint2f> approxContours = new ArrayList<MatOfPoint2f>();
 				boundingRects = new ArrayList<Rect>();
 
 				for (int i = 0; i < contours.size(); i++) {
-					//MatOfPoint2f approx = new MatOfPoint2f();
+
 					contour = contours.get(i);
 					Rect r = Imgproc.boundingRect(contour);
-					// contour.convertTo(approx, CvType.CV_32FC2);
-					// Imgproc.approxPolyDP(approx, approx, 5, true);
-					// approxContours.add(i,approx);
-					// approx.convertTo(contour, CvType.CV_32F);
 
 					boundingRects.add(i, r);
 				}
