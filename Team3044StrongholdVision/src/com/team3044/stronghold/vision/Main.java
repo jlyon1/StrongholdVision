@@ -23,7 +23,29 @@ public class Main {
 	private BufferedImage myImage;
 
 	final static String Address = "http://10.30.44.26/axis-cgi/mjpg/video.cgi?test.mjpeg";
-
+	
+	public static void processRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable, Mat orig){
+		if (boundingRects.size() > 0) {
+			Rect r = boundingRects.get(biggestRectid);
+			System.out.println("Dist: " + r.y);
+			System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) + 4));
+			System.out.println(r.br());
+			System.out.println(true);
+			visionTable.putNumber("DIST", r.y);
+			visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + 4));
+			visionTable.putBoolean("TARGET", true);
+			if (!(r.y > 130 && (160 - Math.abs((r.x + (r.width / 2.0)) + 7.5)) < 10)) {
+				Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), 1);
+			}else{
+				Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), -1);
+			}
+		} else {
+			visionTable.putBoolean("TARGET", false);
+			System.out.println(false);
+		}
+	}
+	
+	
 	public static void main(String[] args) {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
@@ -63,7 +85,7 @@ public class Main {
 		MatOfPoint contour;
 		int biggestRectid = 0;
 		ArrayList<Rect> boundingRects;
-		// System.out.println(v.open("http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg"));
+		
 		while (window.isVisible()) {
 			v.read(frame);
 			if (frame.size().width > 0) {
@@ -98,34 +120,23 @@ public class Main {
 
 					boundingRects.add(i, r);
 				}
+				
 				biggestRectid = 0;
 				for (int i = 0; i < boundingRects.size(); i++) {
 					Rect r = boundingRects.get(i);
 					if (r.size().area() > boundingRects.get(biggestRectid).size().area()
 							&& boundingRects.get(i).br().y < 220) {
+						
 						biggestRectid = i;
 					} else {
 						Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 0, 255), 1);
+						boundingRects.remove(i);
+						i -= 1;
 					}
 				}
-				if (boundingRects.size() > 0) {
-					Rect r = boundingRects.get(biggestRectid);
-					System.out.println("Dist: " + r.y);
-					System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) + 4));
-					System.out.println(r.br());
-					System.out.println(true);
-					visionTable.putNumber("DIST", r.y);
-					visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + 4));
-					visionTable.putBoolean("TARGET", true);
-					if (!(r.y > 130 && (160 - Math.abs((r.x + (r.width / 2.0)) + 7.5)) < 10)) {
-						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), 1);
-					}else{
-						Imgproc.rectangle(orig, new Point(r.tl().x + r.width/3,r.tl().y), new Point(r.br().x - r.width/3,r.br().y - r.height /4), new Scalar(255, 0, 255), -1);
-					}
-				} else {
-					visionTable.putBoolean("TARGET", false);
-					System.out.println(false);
-				}
+				
+				processRectangles(boundingRects, biggestRectid, visionTable, orig);
+
 				window.pushImage(orig);
 				window.repaint();
 			}
