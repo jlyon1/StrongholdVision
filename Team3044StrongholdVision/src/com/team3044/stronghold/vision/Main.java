@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
@@ -48,34 +49,55 @@ public class Main {
 		}
 	}
 	
-	
-	public static void main(String[] args) {
-		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-
-		VideoCapture v = new VideoCapture(Address);
+	public static boolean openCamera(){
+		v =  new VideoCapture(Address);
 		v.open(Address);
 		try {
-			Thread.sleep(1000);
+			Thread.sleep(300);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		if (v.isOpened()) {
 			System.out.println("opened");
+			return true;
 		} else {
 			System.out.println("not open");
+			return false;
 		}
+	}
+	
+	static VideoCapture v;
+	public static void main(String[] args) {
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+
 		Mat frame = new Mat();
 		Mat blank = new Mat();
 		Mat threshold = new Mat();
 		Mat temp = new Mat();
 		Mat orig = new Mat();
+		Mat load = Mat.zeros(new Size(320,240), CvType.CV_8UC3);
 		Mat erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
 		Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
 
 		ArrayList<Mat> channels = new ArrayList<Mat>();
-
+		
 		ImageWindow window = new ImageWindow("Main Image", 335, 279);
 		window.setVisible(true);
+
+		for(int i = 0; i < 1; i ++){
+			if(openCamera()){
+				break;
+			}else{
+				System.out.println("Could Not open Camera (Attempts): " + i);
+				Imgproc.rectangle(load, new Point(10 * i,0), new Point((10 * i) + 10,255), new Scalar(0,0,255),-1);
+				Imgproc.putText(load, "Attempting to connect", new Point(60,120), 0, .5, new Scalar(255,0,0));
+				window.pushImage(load);
+				window.repaint();
+			}
+		}
+		if(!openCamera()){
+			System.exit(0);
+		}
 
 		final int G_MIN = 50;
 		final int G_MAX = 255;
