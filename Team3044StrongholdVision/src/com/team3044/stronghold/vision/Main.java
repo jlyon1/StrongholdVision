@@ -1,6 +1,6 @@
 package com.team3044.stronghold.vision;
 
-import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,6 +19,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
+import com.team3044.stronghold.gui.ConsoleWindow;
 import com.team3044.stronghold.gui.ImageWindow;
 
 import edu.wpi.first.smartdashboard.robot.Robot;
@@ -76,15 +77,28 @@ public class Main {
 		System.out.println();
 		int G_MIN = 50;
 		int G_MAX = 255;
-
+		ConsoleWindow console = new ConsoleWindow("Console",500,300);
+		console.setVisible(true);
 		if(Files.isReadable(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"))){
-			
+			try {
+				BufferedReader reader = Files.newBufferedReader(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"));
+				console.print("------Reading from config-----");
+				String G_MIN_READ = reader.readLine();
+				String G_MAX_READ = reader.readLine();
+				console.print("GMIN: " + G_MIN_READ);
+				console.print(" GMAX: " + G_MAX_READ);
+				
+			} catch (IOException e) {
+				
+				e.printStackTrace();
+			}
 		}else{
 			try {
 				Files.createDirectories(Paths.get(System.getenv("APPDATA"), "\\3044Vision\\"));
 				Files.createFile(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"));
 				BufferedWriter writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"), StandardOpenOption.WRITE);
-				writer.write(G_MIN + "," + G_MAX + ";" + "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + ";" + offset);
+				writer.write(G_MIN + "\n" + G_MAX + "\n" + "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + offset);
+				
 				writer.flush();
 				writer.close();
 			} catch (IOException e) {

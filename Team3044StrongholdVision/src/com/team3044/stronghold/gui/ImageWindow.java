@@ -39,7 +39,7 @@ public class ImageWindow extends JFrame {
 	
 	}
 
-	private class ImagePanel extends JPanel {
+	class ImagePanel extends JPanel {
 		@Override
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
