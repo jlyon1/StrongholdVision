@@ -1,6 +1,11 @@
 package com.team3044.stronghold.vision;
 
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 
 import org.opencv.core.Core;
@@ -21,7 +26,7 @@ import edu.wpi.first.wpilibj.networktables.NetworkTable;
 
 public class Main {
 
-	final static String Address = "http://10.30.44.26/axis-cgi/mjpg/video.cgi?test.mjpeg";
+	final static String Address = "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg";
 	
 	public static double offset = 9;
 	
@@ -68,6 +73,25 @@ public class Main {
 	
 	static VideoCapture v;
 	public static void main(String[] args) {
+		System.out.println();
+		int G_MIN = 50;
+		int G_MAX = 255;
+
+		if(Files.isReadable(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"))){
+			
+		}else{
+			try {
+				Files.createDirectories(Paths.get(System.getenv("APPDATA"), "\\3044Vision\\"));
+				Files.createFile(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"));
+				BufferedWriter writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"), StandardOpenOption.WRITE);
+				writer.write(G_MIN + "," + G_MAX + ";" + "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + ";" + offset);
+				writer.flush();
+				writer.close();
+			} catch (IOException e) {
+				
+				e.printStackTrace();
+			}
+		}
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
 		Mat frame = new Mat();
@@ -84,7 +108,7 @@ public class Main {
 		ImageWindow window = new ImageWindow("Main Image", 335, 279);
 		window.setVisible(true);
 
-		for(int i = 0; i < 1; i ++){
+		for(int i = 0; i < 24; i ++){
 			if(openCamera()){
 				break;
 			}else{
@@ -99,8 +123,6 @@ public class Main {
 			System.exit(0);
 		}
 
-		final int G_MIN = 50;
-		final int G_MAX = 255;
 
 		Mat hierarchy = new Mat();
 		Robot.setHost("roboRIO-3044-FRC.local");
@@ -110,9 +132,9 @@ public class Main {
 		MatOfPoint contour;
 		int biggestRectid = 0;
 		ArrayList<Rect> boundingRects;
-		
+		double start = 0;
 		while (window.isVisible()) {
-			System.out.println("-------- Start:"+System.currentTimeMillis() + "---------");
+			System.out.println("-------- Start:"+(start = System.currentTimeMillis()) + "---------");
 			v.read(frame);
 			if (frame.size().width > 0) {
 				frame.copyTo(orig);
@@ -165,7 +187,15 @@ public class Main {
 
 				window.pushImage(orig);
 				window.repaint();
-				System.out.println("--------End: " + System.currentTimeMillis() + "---------");
+				System.out.println("--------End: " + (System.currentTimeMillis() - start) + "---------");
+				if(System.currentTimeMillis() - start < 30){
+					try {
+						Thread.sleep((long) (30 - (System.currentTimeMillis() - start)));
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 	}
