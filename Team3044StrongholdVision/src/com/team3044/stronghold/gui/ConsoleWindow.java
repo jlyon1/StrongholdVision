@@ -1,14 +1,15 @@
 package com.team3044.stronghold.gui;
 
-import java.awt.TextField;
+import javax.swing.JTextArea;
 
 public class ConsoleWindow extends ImageWindow{
-	TextField text = new TextField();
+	JTextArea text = new JTextArea();
 	public ConsoleWindow(String name, int width, int height) {
 		super(name, width, height);
 		p.setVisible(false);
 		this.setBounds(400, 400, width, height);
 		text.setVisible(true);
+		text.setLineWrap(true);
 		this.getContentPane().add(text);
 	}
 	
@@ -18,6 +19,9 @@ public class ConsoleWindow extends ImageWindow{
 	}
 	public void print(String line){
 		text.setText(text.getText() + line);
+	}
+	public void overWrite(String line){
+		text.setText(line);
 	}
 
 }
