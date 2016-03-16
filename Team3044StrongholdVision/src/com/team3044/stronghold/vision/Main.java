@@ -119,7 +119,7 @@ public class Main {
 
 			} catch (IOException e) {
 
-				e.printStackTrace();
+				console.println(e.getMessage());
 			}
 		} else {
 			try {
@@ -134,7 +134,7 @@ public class Main {
 				writer.close();
 			} catch (IOException e) {
 
-				e.printStackTrace();
+				console.println(e.getMessage());
 			}
 		}
 		console.println("Opencv Loaded");
@@ -280,8 +280,7 @@ public class Main {
 					try {
 						Thread.sleep((long) (30 - (System.currentTimeMillis() - start)));
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						console.println(e.getMessage());
 					}
 				}
 			}
