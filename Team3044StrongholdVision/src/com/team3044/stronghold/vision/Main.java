@@ -33,39 +33,43 @@ public class Main {
 
 	public static double offset = 9;
 
-	public static void processRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable, Mat orig){
+	public static void processRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable,
+			Mat orig) {
 		if (boundingRects.size() > 0) {
 			Rect r = boundingRects.get(biggestRectid);
-			
-			//System.out.println("Dist: " + r.y);
-			//System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) + offset));
-			//System.out.println(r.br());
+
+			// System.out.println("Dist: " + r.y);
+			// System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) +
+			// offset));
+			// System.out.println(r.br());
 			System.out.println(r.width);
 			visionTable.putNumber("DIST", r.y);
-			if(160 - (r.x + (r.width / 2.0)) + offset < 155 && r.width > 20){
+			if (160 - (r.x + (r.width / 2.0)) + offset < 155 && r.width > 20) {
 				visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + offset));
 				visionTable.putBoolean("TARGET", true);
-			}else{
+			} else {
 				visionTable.putBoolean("TARGET", false);
 			}
-			
-			//Draw the target:
-			//TODO: Update target Drawing, and onTargetCondidtions
+
+			// Draw the target:
+			// TODO: Update target Drawing, and onTargetCondidtions
 			if (!(r.y > 130 && (160 - Math.abs((r.x + (r.width / 2.0)) + 7.5)) < 10)) {
-				//Imgproc.rectangle(orig, new Point(r.tl().x,r.tl().y), new Point(r.br().x,r.br().y), new Scalar(255, 0, 255), 1);
-			}else{
-				//Imgproc.rectangle(orig, new Point(r.tl().x,r.tl().y), new Point(r.br().x,r.br().y), new Scalar(255, 0, 255), -1);
+				// Imgproc.rectangle(orig, new Point(r.tl().x,r.tl().y), new
+				// Point(r.br().x,r.br().y), new Scalar(255, 0, 255), 1);
+			} else {
+				// Imgproc.rectangle(orig, new Point(r.tl().x,r.tl().y), new
+				// Point(r.br().x,r.br().y), new Scalar(255, 0, 255), -1);
 			}
 		} else {
 			visionTable.putBoolean("TARGET", false);
-			//System.out.println(false);
+			// System.out.println(false);
 		}
 	}
 
-	public static boolean openCamera() {
-		System.out.println("Opening Camera: " + Address);
+	public static boolean openCamera(ConsoleWindow console) {
+		console.println("Initializing VideoCapture Camera: " + Address);
 		v = new VideoCapture(Address);
-		System.out.println("Opening Camera 2: " + Address);
+		console.println("Opening Camera: " + Address);
 		v.open(Address);
 
 		try {
@@ -94,7 +98,7 @@ public class Main {
 		ConsoleWindow console = new ConsoleWindow("Console", 500, 300);
 		console.setVisible(true);
 		Loader.loadLibrary();
-		//System.out.println(Core.NATIVE_LIBRARY_NAME);
+		// System.out.println(Core.NATIVE_LIBRARY_NAME);
 		if (Files.isReadable(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"))) {
 			try {
 				BufferedReader reader = Files
@@ -112,7 +116,7 @@ public class Main {
 				console.println("Offset:" + offset);
 				console.println("----------Done----------");
 				reader.close();
-				
+
 			} catch (IOException e) {
 
 				e.printStackTrace();
@@ -125,7 +129,6 @@ public class Main {
 						Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"), StandardOpenOption.WRITE);
 				writer.write(G_MIN + "\n" + G_MAX + "\n" + "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg"
 						+ "\n" + "COM5\n" + offset);
-			
 
 				writer.flush();
 				writer.close();
@@ -158,12 +161,11 @@ public class Main {
 		} catch (SerialPortException e1) {
 			console.println("Serial Port Failed to open Sending auto 4 instead");
 			serialFailed = true;
-			//e1.printStackTrace();
+			// e1.printStackTrace();
 		}
-		
 
 		for (int i = 0; i < 24; i++) {
-			if (openCamera()) {
+			if (openCamera(console)) {
 				console.print("Camera Opened");
 				i = 25;
 				break;
@@ -189,43 +191,41 @@ public class Main {
 		console.println("Network Tables initialized: " + Robot.getHost());
 		ArrayList<Rect> boundingRects;
 		double start = 0;
-		
+
 		int[] s;
 		ArrayList<Integer> finalInts = new ArrayList<Integer>();
-		
+
 		while (window.isVisible()) {
-			
+
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
-			if(start - oldSerialReadTime > 5000){
-				
+			if (start - oldSerialReadTime > 5000) {
+
 				oldSerialReadTime = System.currentTimeMillis();
-				
+
 				try {
 					finalInts = new ArrayList<Integer>();
 					if ((s = port.readIntArray()) != null && !serialFailed) {
-						for(int i = 0; i < s.length; i ++){
-							if(s[i] != 10 && s[i] != 13){
-								finalInts.add(Integer.parseInt(String.valueOf((char)(s[i]))));
+						for (int i = 0; i < s.length; i++) {
+							if (s[i] != 10 && s[i] != 13) {
+								finalInts.add(Integer.parseInt(String.valueOf((char) (s[i]))));
 							}
 						}
 						int tmp = finalInts.get(finalInts.size() - 1);
-						if(oldSerialValue != tmp){
+						if (oldSerialValue != tmp) {
 							visionTable.putNumber("AUTO", tmp);
 							oldSerialValue = tmp;
 							console.println(String.valueOf(tmp));
 						}
-						
-						
+
 					}
-					
-					
+
 				} catch (NumberFormatException | SerialPortException e) {
 					visionTable.putNumber("AUTO", 4);
 				}
 			}
 			v.read(frame);
 			if (frame.size().width > 0) {
-				
+
 				frame.copyTo(orig);
 				Core.split(frame, channels);
 				blank = Mat.zeros(channels.get(0).height(), channels.get(0).width(), channels.get(0).type());
