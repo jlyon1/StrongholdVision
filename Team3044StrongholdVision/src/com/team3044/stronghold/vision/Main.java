@@ -104,10 +104,12 @@ public class Main {
 				String G_MAX_READ = reader.readLine();
 				Address = reader.readLine();
 				serialPort = reader.readLine();
+				offset = Double.parseDouble(reader.readLine());
 				console.println("GMIN: " + G_MIN_READ);
 				console.println(" GMAX: " + G_MAX_READ);
 				console.println("Adress: " + Address);
 				console.println("Serial Port: " + serialPort);
+				console.println("Offset:" + offset);
 				console.println("----------Done----------");
 				reader.close();
 				
@@ -122,7 +124,8 @@ public class Main {
 				BufferedWriter writer = Files.newBufferedWriter(
 						Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"), StandardOpenOption.WRITE);
 				writer.write(G_MIN + "\n" + G_MAX + "\n" + "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg"
-						+ "\n" + offset);
+						+ "\n" + "COM5\n" + offset);
+			
 
 				writer.flush();
 				writer.close();
@@ -147,6 +150,17 @@ public class Main {
 
 		ImageWindow window = new ImageWindow("Main Image", 335, 279);
 		window.setVisible(true);
+		boolean serialFailed = false;
+		SerialPort port = new SerialPort(serialPort);
+		try {
+			port.openPort();
+			console.println("Serial Port openend");
+		} catch (SerialPortException e1) {
+			console.println("Serial Port Failed to open Sending auto 4 instead");
+			serialFailed = true;
+			//e1.printStackTrace();
+		}
+		
 
 		for (int i = 0; i < 24; i++) {
 			if (openCamera()) {
@@ -176,14 +190,6 @@ public class Main {
 		ArrayList<Rect> boundingRects;
 		double start = 0;
 		
-		SerialPort port = new SerialPort(serialPort);
-		try {
-			port.openPort();
-			console.println("Serial Port openend");
-		} catch (SerialPortException e1) {
-			console.println("Serial Port Failed to open");
-			e1.printStackTrace();
-		}
 		int[] s;
 		ArrayList<Integer> finalInts = new ArrayList<Integer>();
 		
@@ -196,7 +202,7 @@ public class Main {
 				
 				try {
 					finalInts = new ArrayList<Integer>();
-					if ((s = port.readIntArray()) != null) {
+					if ((s = port.readIntArray()) != null && !serialFailed) {
 						for(int i = 0; i < s.length; i ++){
 							if(s[i] != 10 && s[i] != 13){
 								finalInts.add(Integer.parseInt(String.valueOf((char)(s[i]))));
@@ -214,8 +220,7 @@ public class Main {
 					
 					
 				} catch (NumberFormatException | SerialPortException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					visionTable.putNumber("AUTO", 4);
 				}
 			}
 			v.read(frame);
