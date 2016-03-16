@@ -93,6 +93,8 @@ public class Main {
 		String serialPort = "COM5";
 		ConsoleWindow console = new ConsoleWindow("Console", 500, 300);
 		console.setVisible(true);
+		Loader.loadLibrary();
+		//System.out.println(Core.NATIVE_LIBRARY_NAME);
 		if (Files.isReadable(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"))) {
 			try {
 				BufferedReader reader = Files
