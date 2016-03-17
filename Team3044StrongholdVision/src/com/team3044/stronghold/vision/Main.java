@@ -16,6 +16,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
@@ -97,7 +98,8 @@ public class Main {
 		String serialPort = "COM5";
 		ConsoleWindow console = new ConsoleWindow("Console", 500, 300);
 		console.setVisible(true);
-		Loader.loadLibrary();
+		// Loader.loadLibrary();
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		// System.out.println(Core.NATIVE_LIBRARY_NAME);
 		if (Files.isReadable(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"))) {
 			try {
@@ -164,7 +166,7 @@ public class Main {
 			// e1.printStackTrace();
 		}
 
-		for (int i = 0; i < 24; i++) {
+		for (int i = 0; i < 15; i++) {
 			if (openCamera(console)) {
 				console.print("Camera Opened");
 				i = 25;
@@ -191,7 +193,7 @@ public class Main {
 		console.println("Network Tables initialized: " + Robot.getHost());
 		ArrayList<Rect> boundingRects;
 		double start = 0;
-
+		Mat tmp2 = new Mat();
 		int[] s;
 		ArrayList<Integer> finalInts = new ArrayList<Integer>();
 
@@ -223,50 +225,111 @@ public class Main {
 					visionTable.putNumber("AUTO", 4);
 				}
 			}
+			//frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image2.jpg");
 			v.read(frame);
 			if (frame.size().width > 0) {
 
 				frame.copyTo(orig);
 				Core.split(frame, channels);
 				blank = Mat.zeros(channels.get(0).height(), channels.get(0).width(), channels.get(0).type());
-				Core.subtract(channels.get(2), new Scalar(0, 0, 0), temp);
+				Core.multiply(channels.get(2), new Scalar(1.1, 1.1, 1.1), temp);
+				Core.subtract(channels.get(0), new Scalar(150, 150, 150), tmp2);
 				Core.subtract(channels.get(1), temp, temp);
+				Core.subtract(temp, tmp2, temp);
 
 				channels.set(0, blank);
 				channels.set(2, blank);
 				channels.set(1, temp);
 
 				Core.merge(channels, frame);
-				Core.inRange(frame, new Scalar(0, G_MIN, 0), new Scalar(0, G_MAX, 0), threshold);
+
+				Core.inRange(frame, new Scalar(0, 30, 0), new Scalar(0, 255, 0), threshold);
 
 				Imgproc.erode(threshold, threshold, erodeElement);
 				Imgproc.dilate(threshold, threshold, dilateElement);
 				// window.pushImage(threshold);
 
 				ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-
+				// window.pushImage(threshold);
 				Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE,
 						new Point(0, 0));
 
 				boundingRects = new ArrayList<Rect>();
-
+				
 				for (int i = 0; i < contours.size(); i++) {
-
+					Imgproc.drawContours(orig, contours, i, new Scalar(0,255,0));
 					contour = contours.get(i);
 					Rect r = Imgproc.boundingRect(contour);
-					Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(255, 0, 0), 1);
+					
+					// Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(255,
+					// 0, 0), 1);
 					boundingRects.add(i, r);
 				}
-
-				biggestRectid = 0;
+				int lowestMean = 0;
 				for (int i = 0; i < boundingRects.size(); i++) {
 					Rect r = boundingRects.get(i);
+					Rect lowestMeanRect = boundingRects.get(lowestMean);
+					if( Core.mean(orig.submat((int)r.tl().y+(int)(r.height * .3),
+							(int)r.tl().y +(int)(r.height * .7),
+							(int)r.tl().x + (int)(r.width * .3), 
+							(int)(r.width * .7) + (int)r.tl().x)).val[0] < 
+							Core.mean(orig.submat((int)lowestMeanRect.tl().y+(int)(lowestMeanRect.height * .3),
+									(int)lowestMeanRect.tl().y +(int)(lowestMeanRect.height * .7),
+									(int)lowestMeanRect.tl().x + (int)(lowestMeanRect.width * .3), 
+									(int)(lowestMeanRect.width * .7) + (int)lowestMeanRect.tl().x)).val[0]){
+						lowestMean = i;
+						
+					}
+					if(Core.mean(orig.submat((int)r.tl().y+(int)(r.height * .3),
+							(int)r.tl().y +(int)(r.height * .7),
+							(int)r.tl().x + (int)(r.width * .3), 
+							(int)(r.width * .7) + (int)r.tl().x)).val[2] > 20 ){
+							
+							boundingRects.set(i, new Rect(0,0,1,1));
+						} 
+					if(Core.mean(orig.submat((int)r.tl().y+(int)(r.height * .3),
+							(int)r.tl().y +(int)(r.height * .7),
+							(int)r.tl().x + (int)(r.width * .3), 
+							(int)(r.width * .7) + (int)r.tl().x)).val[0] > 20 ){
+							
+							boundingRects.set(i, new Rect(0,0,1,1));
+					}
+					if(r.width > 60){
+						boundingRects.set(i, new Rect(0,0,1,1));
+					}else{
+						
+					}
+					if(r.width/r.height < .75 && r.width/r.height > .4 && r.size().width * r.size().height > 100){
+						boundingRects.set(i, new Rect(0,0,1,1));
+					}
+				}
+				biggestRectid = 0;
+
+				for (int i = 0; i < boundingRects.size(); i++) {
+					
+					Rect r = boundingRects.get(i);
+					
+					// Scalar mean = Core.mean(orig.submat(r));
+					// System.out.println(mean.val[1]);
 					if (r.size().width * r.size().height > boundingRects.get(biggestRectid).size().width
-							* r.size().height && r.x < 310) {
-						Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(255, 0, 0), 1);
-						biggestRectid = i;
+							* r.size().height && r.x < 310 && r.width > (r.height / 2) && r.size().width > 10) {
+						Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(100*i, 0, 0), 1);
+						
+						/*window.pushImage(orig.submat((int)r.tl().y+(int)(r.height * .3),
+								(int)r.tl().y +(int)(r.height * .7),
+								(int)r.tl().x + (int)(r.width * .3), 
+								(int)(r.width * .7) + (int)r.tl().x));
+						window.repaint();
+						*/
+						
+						
+						//new java.util.Scanner((System.in)).nextLine();
+
 					} else {
-						Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 0, 255), 1);
+						r = new Rect(0, 0, 1, 1);
+						boundingRects.set(i, r);
+						// Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0,
+						// 0, 255), 1);
 
 					}
 				}
