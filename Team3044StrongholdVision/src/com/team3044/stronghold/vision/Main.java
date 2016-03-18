@@ -246,7 +246,7 @@ public class Main {
 
 				Core.merge(channels, frame);
 				// window.pushImage(frame);
-				Core.inRange(frame, new Scalar(0, 30, 0), new Scalar(0, 255, 0), threshold);
+				Core.inRange(frame, new Scalar(0, 10, 0), new Scalar(0, 255, 0), threshold);
 				threshold.copyTo(tmp2);
 
 				Imgproc.erode(threshold, threshold, erodeElement);
@@ -273,7 +273,7 @@ public class Main {
 				for (int i = 0; i < boundingRects.size(); i++) {
 
 					Rect r = boundingRects.get(i);
-					if (r.area() > 100 ) {
+					if (r.area() > 500 ) {
 						//System.out.println(r.area());
 						Scalar mean = Core.mean(orig.submat(r));
 						Mat centerSeventyFive = new Mat();
@@ -314,8 +314,9 @@ public class Main {
 							}
 							new Scanner((System.in)).nextLine();
 							// window.pushImage(tmp2.submat(r));
-
-							// window.repaint();
+							window.pushImage(orig);
+							window.repaint();
+							new Scanner((System.in)).nextLine();
 						}
 
 						
