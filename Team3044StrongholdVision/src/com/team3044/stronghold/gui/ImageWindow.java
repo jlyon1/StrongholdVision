@@ -25,6 +25,7 @@ public class ImageWindow extends JFrame {
 		p.setVisible(true);
 		pane.add(p);
 		pane.setVisible(true);
+		this.setAlwaysOnTop(true);
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				System.exit(0);
