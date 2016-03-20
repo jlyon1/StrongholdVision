@@ -7,12 +7,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -35,24 +35,33 @@ public class Main {
 
 	public static double offset = 9;
 
+	static Point lastGood = new Point(0, 0);
+	int count2 = 0;
+
 	public static void processRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable,
 			Mat orig) {
 		if (boundingRects.size() > 0) {
 			Rect r = boundingRects.get(biggestRectid);
-
-			// System.out.println("Dist: " + r.y);
-			// System.out.println("Center: " + (160 - (r.x + (r.width / 2.0)) +
-			// offset));
-			// System.out.println(r.br());
-			System.out.println(r.width);
-			visionTable.putNumber("DIST", r.y);
-			if (160 - (r.x + (r.width / 2.0)) + offset < 155 && r.width > 20) {
-				visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + offset));
-				visionTable.putBoolean("TARGET", true);
-			} else {
-				visionTable.putBoolean("TARGET", false);
+			if (lastGood.x == 0) {
+				lastGood = r.tl();
 			}
-
+			if (count > 10) {
+				count = 0;
+				lastGood = r.tl();
+			}
+			if (Math.abs(lastGood.x - r.x) < 30) {
+				lastGood = r.tl();
+				System.out.println(r.width);
+				visionTable.putNumber("DIST", r.y);
+				if (160 - (r.x + (r.width / 2.0)) + offset < 155 && r.width > 20) {
+					visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + offset));
+					visionTable.putBoolean("TARGET", true);
+				} else {
+					visionTable.putBoolean("TARGET", false);
+				}
+			} else {
+				count += 1;
+			}
 			// Draw the target:
 			// TODO: Update target Drawing, and onTargetCondidtions
 			if (!(r.y > 130 && (160 - Math.abs((r.x + (r.width / 2.0)) + 7.5)) < 10)) {
@@ -89,6 +98,7 @@ public class Main {
 	}
 
 	static VideoCapture v;
+	static int count = 0;
 
 	public static void main(String[] args) {
 		System.out.println();
@@ -155,7 +165,7 @@ public class Main {
 
 		ArrayList<Mat> channels = new ArrayList<Mat>();
 
-		ImageWindow window = new ImageWindow("Main Image", 335, 279);
+		ImageWindow window = new ImageWindow("Main Image", 640, 480);
 		window.setVisible(true);
 		boolean serialFailed = false;
 		SerialPort port = new SerialPort(serialPort);
@@ -168,7 +178,7 @@ public class Main {
 			// e1.printStackTrace();
 		}
 
-		for (int i = 0; i < 0; i++) {
+		for (int i = 0; i < 10; i++) {
 			if (openCamera(console)) {
 				console.print("Camera Opened");
 				i = 25;
@@ -192,7 +202,7 @@ public class Main {
 		NetworkTable visionTable = NetworkTable.getTable("SmartDashboard");
 		MatOfPoint contour;
 		int biggestRectid = 0;
-		console.println("Network Tables initialized: " + Robot.getHost());
+		/* console.println("Network Tables initialized: " + Robot.getHost()); */
 		ArrayList<Rect> boundingRects;
 		double start = 0;
 		Mat tmp2 = new Mat();
@@ -200,7 +210,13 @@ public class Main {
 		ArrayList<Integer> finalInts = new ArrayList<Integer>();
 
 		while (window.isVisible()) {
+			count += 1;
+			if (count % 10 == 0) {
+				// Imgcodecs.imencode("C:\\opencv3.0.0\\" +
+				// String.valueOf(count) + ".jpg",
+				// MatOfByte.fromNativeAddr(orig.getNativeObjAddr()));
 
+			}
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
 			if (start - oldSerialReadTime > 5000) {
 
@@ -227,30 +243,23 @@ public class Main {
 					visionTable.putNumber("AUTO", 4);
 				}
 			}
-			frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image3.jpg");
-			// v.read(frame);
+			//frame = Imgcodecs.imread("D:\\img\\7.jpg");
+			v.read(frame);
 			if (frame.size().width > 0) {
 
 				frame.copyTo(orig);
-				Core.split(frame, channels);
-				blank = Mat.zeros(channels.get(0).height(), channels.get(0).width(), channels.get(0).type());
-				Core.multiply(channels.get(2), new Scalar(1.1, 1.1, 1.1), temp);
-				// Core.subtract(channels.get(0), new Scalar(150, 150, 150),
-				// tmp2);
-				Core.subtract(channels.get(1), temp, temp);
-				// Core.subtract(temp, tmp2, temp);
 
-				channels.set(0, blank);
-				channels.set(2, blank);
-				channels.set(1, temp);
-
-				Core.merge(channels, frame);
-				// window.pushImage(frame);
-				Core.inRange(frame, new Scalar(0, 10, 0), new Scalar(0, 255, 0), threshold);
+				Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2HSV);
+				Core.inRange(frame, new Scalar(20, 00, 50), new Scalar(170, 150, 256), threshold);
+				Imgcodecs.imwrite("C:\\Users\\Joey\\Desktop\\test.jpg",
+				 orig);
 				threshold.copyTo(tmp2);
-
+				//threshold.copyTo(tmp2);
+				//Imgproc.erode(threshold, threshold, erodeElement);
 				Imgproc.erode(threshold, threshold, erodeElement);
+				//Imgproc.dilate(threshold, threshold, dilateElement);
 				Imgproc.dilate(threshold, threshold, dilateElement);
+				
 				// window.pushImage(threshold);
 
 				ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
@@ -261,20 +270,39 @@ public class Main {
 				boundingRects = new ArrayList<Rect>();
 
 				for (int i = 0; i < contours.size(); i++) {
-					Imgproc.drawContours(orig, contours, i, new Scalar(0, 255, 0));
+					
 					contour = contours.get(i);
-					Rect r = Imgproc.boundingRect(contour);
-					//System.out.println(r.size());
-					boundingRects.add(i, r);
+					MatOfPoint2f thisContour2f = new MatOfPoint2f();
+					MatOfPoint approxContour = new MatOfPoint();
+					MatOfPoint2f approxContour2f = new MatOfPoint2f();
+					contour.convertTo(thisContour2f, CvType.CV_32FC2);
+					Imgproc.approxPolyDP(thisContour2f, approxContour2f, 2, true);
+					approxContour2f.convertTo(approxContour, CvType.CV_32S);
+					if (approxContour.size().height < 100 && approxContour.size().height > 0) {
+						
+						System.out.println(approxContour.get(0, 0)[0]);
+						Rect r = Imgproc.boundingRect(contour);
+						contours.set(i, approxContour);
+						// System.out.println(r.size());
+						boundingRects.add(r);
+						Imgproc.drawContours(orig, contours, i, new Scalar(0, 0, 255));
+					}else{
+						contours.set(i, new MatOfPoint());
+					}
+					
 				}
 
 				biggestRectid = 0;
 				ArrayList<Rect> boundingRect2 = new ArrayList<Rect>();
+				Rect largeBadRectangle = new Rect();
 				for (int i = 0; i < boundingRects.size(); i++) {
 
 					Rect r = boundingRects.get(i);
-					if (r.area() > 500 ) {
-						//System.out.println(r.area());
+					if (r.area() > 7000) {
+						largeBadRectangle = r;
+					}
+					if (r.area() > 500 || r.width / r.height > 2) {
+						// System.out.println(r.area());
 						Scalar mean = Core.mean(orig.submat(r));
 						Mat centerSeventyFive = new Mat();
 						Rect midSeventyFive = new Rect((int) (r.tl().x) + (int) (r.width * .25),
@@ -294,39 +322,54 @@ public class Main {
 								}
 							}
 						}
-						
-						System.out.println(Core.sumElems(tmp2.submat(midSeventyFive)).val[0] / r.area());
-						if (Core.sumElems(tmp2.submat(midSeventyFive)).val[0] / r.area() > 100) {
-							Rect midTen = new Rect((int) (r.tl().x) + (int) (r.width * .45),
-									(int) (r.tl().y) + (int) (r.height * .45), (int) (r.width * .1),
-									(int) (r.height * .1));
-							//System.out.println("BLA");
-							if (Core.sumElems(tmp2.submat(midTen)).val[0] / midTen.area() < 10) {
-								//System.out.println("NoAdd");
-								window.pushImage(orig.submat(r));
-								window.repaint();
+
+						// System.out.println(Core.sumElems(tmp2.submat(midSeventyFive)).val[0]
+						// / r.area());
+						if (Core.sumElems(tmp2.submat(midSeventyFive)).val[0] / r.area() > 100
+								&& Core.sumElems(tmp2.submat(midSeventyFive)).val[0] / r.area() < 200) {
+
+							if (r.area() > 7000) {
+
 							} else {
-								//System.out.println("ADD");
-								boundingRect2.add(r);
-								Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
-								window.pushImage(orig.submat(r));
-								window.repaint();
+								if (!largeBadRectangle.contains(r.tl())) {
+									boundingRect2.add(r);
+									Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
+								}
 							}
-							new Scanner((System.in)).nextLine();
+							// new Scanner((System.in)).nextLine();
 							// window.pushImage(tmp2.submat(r));
-							window.pushImage(orig);
-							window.repaint();
-							new Scanner((System.in)).nextLine();
+
+							// new Scanner((System.in)).nextLine();
 						}
 
-						
 					}
 
 				}
+				int maxId = 0;
+				for (int i = 0; i < boundingRect2.size(); i++) {
+					Rect r = boundingRect2.get(i);
+					if (r.size().area() > boundingRect2.get(maxId).size().area()
+							&& (r.size().height / r.size().width < 1)) {
+						maxId = i;
+					} else if ((r.size().height / r.size().width < 1) && r.size().area() > 1000) {
+						maxId = i;
+					}
+				}
+				if (boundingRect2.size() > 0) {
+					Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
+							new Scalar(255, 0, 0), 1);
+					Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", orig);
+					processRectangles(boundingRect2, maxId, visionTable, orig);
+				}
 
-				processRectangles(boundingRect2, biggestRectid, visionTable, orig);
-				window.pushImage(orig);
+				// Imgproc.cvtColor(threshold, threshold,
+				// Imgproc.COLOR_BGR2HSV);
+				Mat finalMat = new Mat();
+				orig.copyTo(finalMat);
+				Imgproc.resize(finalMat, finalMat, new Size(640, 480));
+				window.pushImage(finalMat);
 				window.repaint();
+
 				System.out.println("--------End: " + (System.currentTimeMillis() - start) + "---------");
 				if (System.currentTimeMillis() - start < 30) {
 					try {
