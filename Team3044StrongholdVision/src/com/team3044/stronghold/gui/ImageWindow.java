@@ -16,12 +16,14 @@ public class ImageWindow extends JFrame {
 
 	private BufferedImage myImage;
 	ImagePanel p = new ImagePanel();
+	
 
 	public ImageWindow(String name, int width, int height, VisionProcess process) {
 		setTitle(name);
 		setSize(width, height); 
 		setLocation(10, 200); 
 		Container pane = this.getContentPane();
+		pane.addMouseListener(process);
 		p.setVisible(true);
 		pane.add(p);
 		pane.setVisible(true);
