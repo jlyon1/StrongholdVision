@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -23,6 +24,7 @@ import org.opencv.videoio.VideoCapture;
 
 import com.team3044.stronghold.gui.ConsoleWindow;
 import com.team3044.stronghold.gui.ImageWindow;
+import com.team3044.stronghold.gui.VisionProcess;
 
 import edu.wpi.first.smartdashboard.robot.Robot;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
@@ -103,6 +105,13 @@ public class Main {
 	static int count = 0;
 
 	public static void main(String[] args) {
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		VisionProcess vision = new VisionProcess();
+		for(int i = 0; i < 10000000; i ++){
+			vision.process();
+		}
+		
+		(new Scanner(System.in)).nextLine();
 		int state = 0;
 		final int CONNECTING = 0;
 		final int MAIN = 1;

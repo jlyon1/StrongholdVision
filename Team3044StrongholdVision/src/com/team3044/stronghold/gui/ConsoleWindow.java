@@ -20,6 +20,25 @@ public class ConsoleWindow extends ImageWindow {
 	BufferedWriter writer;
 	
 
+	public ConsoleWindow(String name, int width, int height, VisionProcess process) {
+		super(name, width, height,process);
+		p.setVisible(false);
+		this.setBounds(400, 400, width, height);
+		text.setVisible(true);
+		text.setLineWrap(true);
+		this.getContentPane().add(text);
+		try {
+			writer = Files.newBufferedWriter(Paths
+					.get(System.getenv("APPDATA") + "\\3044Vision\\" + String.valueOf(Date.from(Instant.now()).getDay())
+							+ "-" + String.valueOf(Date.from(Instant.now()).getHours())
+							+ String.valueOf(Date.from(Instant.now()).getMinutes()) + "log.txt"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+
+	}
 	public ConsoleWindow(String name, int width, int height) {
 		super(name, width, height);
 		p.setVisible(false);

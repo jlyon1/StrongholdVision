@@ -17,6 +17,22 @@ public class ImageWindow extends JFrame {
 	private BufferedImage myImage;
 	ImagePanel p = new ImagePanel();
 
+	public ImageWindow(String name, int width, int height, VisionProcess process) {
+		setTitle(name);
+		setSize(width, height); 
+		setLocation(10, 200); 
+		Container pane = this.getContentPane();
+		p.setVisible(true);
+		pane.add(p);
+		pane.setVisible(true);
+		this.setAlwaysOnTop(true);
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				System.exit(0);
+			}
+		});
+		this.addKeyListener(process);
+	}
 	public ImageWindow(String name, int width, int height) {
 		setTitle(name);
 		setSize(width, height); 
@@ -31,8 +47,7 @@ public class ImageWindow extends JFrame {
 				System.exit(0);
 			}
 		});
-		
-
+		//this.addKeyListener(process);
 	}
 	
 	public void pushImage(Mat image){
