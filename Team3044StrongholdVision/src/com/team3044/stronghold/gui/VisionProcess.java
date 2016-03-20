@@ -391,7 +391,11 @@ public class VisionProcess implements KeyListener,MouseListener {
 	}
 
 	public void onCalib() {
+		this.oldX = mouseX;
+		this.oldY = mouseY;
+		thresholdWindow.setVisible(true);
 		state = CALIBRATE;
+		
 		System.out.println("calib");
 	}
 
