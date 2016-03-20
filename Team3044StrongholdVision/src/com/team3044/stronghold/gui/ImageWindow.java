@@ -39,6 +39,7 @@ public class ImageWindow extends JFrame {
 		p.pushImage(image);
 	
 	}
+	
 
 	class ImagePanel extends JPanel {
 		@Override

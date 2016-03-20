@@ -37,8 +37,10 @@ public class Main {
 
 	static Point lastGood = new Point(0, 0);
 	int count2 = 0;
+	
 
-	public static void processRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable,
+	
+	public static void sendRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable,
 			Mat orig) {
 		if (boundingRects.size() > 0) {
 			Rect r = boundingRects.get(biggestRectid);
@@ -101,7 +103,14 @@ public class Main {
 	static int count = 0;
 
 	public static void main(String[] args) {
-		System.out.println();
+		int state = 0;
+		final int CONNECTING = 0;
+		final int MAIN = 1;
+		final int DEBUG = 2;
+		final int CALIBRATE = 3;
+
+		boolean ignoreRobot = false;
+	
 		int G_MIN = 50;
 		int G_MAX = 255;
 		int oldSerialValue = 0;
@@ -359,7 +368,7 @@ public class Main {
 					Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
 							new Scalar(255, 0, 0), 1);
 					Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", orig);
-					processRectangles(boundingRect2, maxId, visionTable, orig);
+					sendRectangles(boundingRect2, maxId, visionTable, orig);
 				}
 
 				// Imgproc.cvtColor(threshold, threshold,
