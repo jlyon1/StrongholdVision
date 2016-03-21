@@ -131,6 +131,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	public void process() {
 		switch (state) {
 		case INIT:
+			onLoad();
 			frame = new Mat();
 			blank = new Mat();
 			threshold = new Mat();
@@ -202,16 +203,20 @@ public class VisionProcess implements KeyListener, MouseListener {
 					contour.convertTo(thisContour2f, CvType.CV_32FC2);
 					Imgproc.approxPolyDP(thisContour2f, approxContour2f, 2, true);
 					approxContour2f.convertTo(approxContour, CvType.CV_32S);
-					if (approxContour.size().height < 100 && approxContour.size().height > 0) {
+					if (approxContour.size().height < 12 && approxContour.size().height > 5) {
 
 						System.out.println(approxContour.get(0, 0)[0]);
 						Rect r = Imgproc.boundingRect(contour);
 						contours.set(i, approxContour);
 
 						boundingRects.add(r);
-						Imgproc.drawContours(orig, contours, i, new Scalar(0, 0, 255));
+						if(state == DEBUG)
+							Imgproc.drawContours(orig, contours, i, new Scalar(0, 255, 0));
 					} else {
+						if(state == DEBUG)
+							Imgproc.drawContours(orig, contours, i, new Scalar(0, 0, 255));
 						contours.set(i, new MatOfPoint());
+						
 					}
 
 				}
@@ -277,11 +282,11 @@ public class VisionProcess implements KeyListener, MouseListener {
 					Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
 							new Scalar(255, 0, 0), 1);
 					Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", frame);
-					Main.sendRectangles(boundingRect2, maxId, visionTable, orig);
+					Imgproc.line(orig, new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width/2,0), 
+							new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width/2,10000), new Scalar(255,0,0));
+
 				}
 
-				// Imgproc.cvtColor(threshold, threshold,
-				// Imgproc.COLOR_BGR2HSV);
 				Mat finalMat = new Mat();
 				orig.copyTo(finalMat);
 				Imgproc.resize(finalMat, finalMat, new Size(640, 480));
@@ -301,7 +306,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 			break;
 
 		case CALIBRATE:
-			Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
+			frame.copyTo(orig);
+			//Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
 			this.mainImage.pushImage(orig);
 			System.out.println(orig.size());
 			if (this.clickCount != oldClickCount) {
@@ -314,7 +320,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 				this.V_MAX = (int) orig.get(mouseX, mouseY)[2];
 				System.out.println(H_MIN);
 				this.oldClickCount = 0;
-				System.out.println(new Scalar(H_MIN, S_MIN, V_MIN));
+				output.println(String.valueOf(new Scalar(H_MIN, S_MIN, V_MIN)));
 				clickCount = 0;
 			}
 
@@ -327,7 +333,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 							StandardOpenOption.WRITE);
 					writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
 							+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset
-							+ "/nAXIS");
+							+ "\nAXIS");
 
 					writer.flush();
 					writer.close();
@@ -370,7 +376,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 			BufferedWriter writer = Files.newBufferedWriter(
 					Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"), StandardOpenOption.WRITE);
 			writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
-					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "/nAXIS");
+					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nAXIS");
 
 			writer.flush();
 			writer.close();
@@ -407,7 +413,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 			writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
 					StandardOpenOption.WRITE);
 			writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
-					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "/nAXIS");
+					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nAXIS");
 
 			writer.flush();
 			writer.close();
@@ -427,7 +433,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 			writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
 					StandardOpenOption.WRITE);
 			writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
-					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "/nLAPTOP");
+					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nLAPTOP");
 
 			writer.flush();
 			writer.close();
