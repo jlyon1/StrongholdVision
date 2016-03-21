@@ -219,7 +219,39 @@ public class VisionProcess implements KeyListener,MouseListener {
 		case CALIBRATE:
 			Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
 			this.mainImage.pushImage(orig);
+			if(this.clickCount != oldClickCount){
+				
+				this.H_MIN = (int) orig.get(mouseX, mouseY)[0];
+				this.S_MIN = (int) orig.get(mouseX, mouseY)[1];
+				this.V_MIN = (int) orig.get(mouseX, mouseY)[2];
+				this.H_MAX = (int) orig.get(mouseX, mouseY)[0];
+				this.S_MAX = (int) orig.get(mouseX, mouseY)[1];
+				this.V_MAX = (int) orig.get(mouseX, mouseY)[2];
+				System.out.println(H_MIN);
+				this.oldClickCount = 0;
+				System.out.println(new Scalar(H_MIN,S_MIN,V_MIN));
+				clickCount = 0;
+			}
 			
+			Core.inRange(orig, new Scalar(H_MIN, S_MIN, V_MIN), new Scalar(H_MAX, S_MAX, V_MAX), threshold);
+			this.thresholdWindow.pushImage(threshold);
+			if(thresholdWindow.isVisible() == false){
+				BufferedWriter writer;
+				try {
+					writer = Files.newBufferedWriter(
+							Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"), StandardOpenOption.WRITE);
+					writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
+							+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "/nAXIS");
+
+					writer.flush();
+					writer.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				this.state = MAIN_LOOP;
+			}
 			break;
 		case DEBUG:
 			break;
@@ -232,10 +264,10 @@ public class VisionProcess implements KeyListener,MouseListener {
 
 	private Path configSaveLocation = Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt");
 
-	ImageWindow thresholdWindow = new ImageWindow("DEBUG", 640, 480, this);
-	ImageWindow mainImage = new ImageWindow("CameraImage", 640, 480, this);
+	ImageWindow thresholdWindow = new ImageWindow("DEBUG", 640, 480, this,false);
+	ImageWindow mainImage = new ImageWindow("CameraImage", 640, 480, this,true);
 	OptionSelector selector = new OptionSelector("Begin", 300, 200, this);
-	ConsoleWindow output = new ConsoleWindow("Console", 500, 500, this);
+	ConsoleWindow output = new ConsoleWindow("Console", 500, 500, this,false);
 
 	private String cameraAddr = "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg";
 	private String serialPort = "COM5";
@@ -261,6 +293,8 @@ public class VisionProcess implements KeyListener,MouseListener {
 	ArrayList<Integer> finalInts = new ArrayList<Integer>();
 
 	boolean isAxis = true;
+	private int clickCount = 0;
+	private int oldClickCount = 0;
 
 	public VisionProcess() {
 		thresholdWindow.setVisible(false);
@@ -521,6 +555,11 @@ public class VisionProcess implements KeyListener,MouseListener {
 	public void mouseClicked(MouseEvent mouse) {
 		System.out.println(mouse.getX());
 		System.out.println(mouse.getY());
+		this.mouseX = mouse.getX();
+		this.mouseY = mouse.getY();
+		this.clickCount = mouse.getClickCount();
+		this.oldClickCount = -1;
+		//System.out.println(clickCount);
 		
 	}
 

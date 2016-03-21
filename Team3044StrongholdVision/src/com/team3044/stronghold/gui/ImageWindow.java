@@ -17,9 +17,10 @@ public class ImageWindow extends JFrame {
 	private BufferedImage myImage;
 	ImagePanel p = new ImagePanel();
 	
-
-	public ImageWindow(String name, int width, int height, VisionProcess process) {
+	boolean exitOnClose;
+	public ImageWindow(String name, int width, int height, VisionProcess process, boolean exitOnClose) {
 		setTitle(name);
+		this.exitOnClose = exitOnClose;
 		setSize(width, height); 
 		setLocation(10, 200); 
 		Container pane = this.getContentPane();
@@ -30,7 +31,8 @@ public class ImageWindow extends JFrame {
 		this.setAlwaysOnTop(true);
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				System.exit(0);
+				if(exitOnClose)
+					System.exit(0);
 			}
 		});
 		this.addKeyListener(process);
@@ -46,7 +48,8 @@ public class ImageWindow extends JFrame {
 		this.setAlwaysOnTop(true);
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				System.exit(0);
+				if(exitOnClose)
+					System.exit(0);
 			}
 		});
 		//this.addKeyListener(process);

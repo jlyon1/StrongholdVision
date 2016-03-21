@@ -20,8 +20,8 @@ public class ConsoleWindow extends ImageWindow {
 	BufferedWriter writer;
 	
 
-	public ConsoleWindow(String name, int width, int height, VisionProcess process) {
-		super(name, width, height,process);
+	public ConsoleWindow(String name, int width, int height, VisionProcess process,boolean exitOnClose) {
+		super(name, width, height,process,exitOnClose);
 		p.setVisible(false);
 		this.setBounds(400, 400, width, height);
 		text.setVisible(true);
