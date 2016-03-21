@@ -98,6 +98,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 	private int oldClickCount = 0;
 
 	NetworkTable visionTable;
+	
+	int countDebug = 0;
 
 	TextboxWindow tb = new TextboxWindow("TEST", 100, 100);
 	public VisionProcess() {
@@ -168,8 +170,10 @@ public class VisionProcess implements KeyListener, MouseListener {
 		case CONNECT_SERIAL:
 			break;
 		case DEBUG:
+			countDebug += 1;
 			thresholdWindow.setVisible(true);
 			thresholdWindow.repaint();
+			Imgcodecs.imwrite("C:\\Opencv3.0.0\\images\\" + countDebug + ".jpg", orig);
 		case MAIN_LOOP: {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
