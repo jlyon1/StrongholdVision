@@ -165,7 +165,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 		case CONNECT_ROBOT:
 			this.connectToRobot("roboRIO-3044-frc.local");
-			this.state = MAIN_LOOP;
+			this.state = INIT;
 			break;
 		case CONNECT_SERIAL:
 			break;
@@ -468,7 +468,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	}
 
 	public void onReconnect() {
-		this.state = INIT;
+		this.state = CONNECT_ROBOT;
 
 		System.out.println("reconnect");
 	}
