@@ -39,7 +39,6 @@ import com.team3044.stronghold.vision.Main;
 
 import edu.wpi.first.smartdashboard.robot.Robot;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
-import jssc.SerialPortException;
 
 public class VisionProcess implements KeyListener, MouseListener {
 
@@ -100,6 +99,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 	NetworkTable visionTable;
 
+	TextboxWindow tb = new TextboxWindow("TEST", 100, 100);
 	public VisionProcess() {
 		thresholdWindow.setVisible(false);
 		selector.setVisible(true);
@@ -168,9 +168,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 			break;
 		case DEBUG:
 			thresholdWindow.setVisible(true);
-			thresholdWindow.pushImage(threshold);
 			thresholdWindow.repaint();
-
 		case MAIN_LOOP: {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
@@ -182,9 +180,9 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 				Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2HSV);
 				Core.inRange(frame, new Scalar(H_MIN, S_MIN, V_MIN), new Scalar(H_MAX, S_MAX, V_MAX), threshold);
-
+				thresholdWindow.pushImage(threshold);
 				threshold.copyTo(tmp2);
-
+				
 				Imgproc.erode(threshold, threshold, erodeElement);
 
 				Imgproc.dilate(threshold, threshold, dilateElement);
@@ -305,8 +303,9 @@ public class VisionProcess implements KeyListener, MouseListener {
 		case CALIBRATE:
 			Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
 			this.mainImage.pushImage(orig);
+			System.out.println(orig.size());
 			if (this.clickCount != oldClickCount) {
-
+				
 				this.H_MIN = (int) orig.get(mouseX, mouseY)[0];
 				this.S_MIN = (int) orig.get(mouseX, mouseY)[1];
 				this.V_MIN = (int) orig.get(mouseX, mouseY)[2];
@@ -344,9 +343,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 		}
 	}
 
-	public void restart() {
-
-	}
 
 	public void loadConfigFile(String file) throws IOException {
 		if (Files.isReadable(configSaveLocation)) {
