@@ -81,12 +81,12 @@ public class Main {
 		}
 	}
 
-	public static boolean openCamera(ConsoleWindow console) {
+	public static VideoCapture openCamera(ConsoleWindow console, VideoCapture v) {
 		console.println("Initializing VideoCapture Camera: " + Address);
 		v = new VideoCapture(Address);
 		console.println("Opening Camera: " + Address);
 		v.open(Address);
-
+		
 		try {
 			Thread.sleep(300);
 		} catch (InterruptedException e) {
@@ -94,10 +94,10 @@ public class Main {
 		}
 		if (v.isOpened()) {
 			System.out.println("opened");
-			return true;
+			return v;
 		} else {
 			System.out.println("not open");
-			return false;
+			return null;
 		}
 	}
 

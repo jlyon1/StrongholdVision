@@ -146,14 +146,14 @@ public class VisionProcess implements KeyListener, MouseListener {
 			state = CONNECT_CAMERA;
 			break;
 		case CONNECT_CAMERA:
-			if (camera.isOpened())
-				camera.release();
+			//if (camera.isOpened())
+				///camera.release();
 			if (isAxis) {
-				if (openCamera(output)) {
+				if ((camera = Main.openCamera(output, camera)) != null) {
 					output.print("Camera Opened");
 					this.state = MAIN_LOOP;
 				} else {
-
+					output.println("Could Not Connect, Trying again");
 				}
 			} else {
 				this.camera = new VideoCapture(0);
@@ -181,13 +181,24 @@ public class VisionProcess implements KeyListener, MouseListener {
 			camera.read(frame);
 			if (frame.size().width > 0) {
 				count += 1;
+				
+				ArrayList<Mat> channels = new ArrayList<Mat>();
+				/*for(int i =0; i < frame.size().width; i ++){
+					for(int j = 0; j < frame.size().height; j ++){
+						if(frame.get(j, i)[0] > frame.get(j, i)[1]){
+							frame.put(j, i, new double[]{255,0,0});
+						}
+					}
+				}*/
+				Core.split(frame, channels);
+				//channels.set(0, Mat.zeros(channels.get(0).size(), channels.get(0).type()));
+				Core.merge(channels, frame);
 				frame.copyTo(orig);
-
 				Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2HSV);
 				Core.inRange(frame, new Scalar(H_MIN, S_MIN, V_MIN), new Scalar(H_MAX, S_MAX, V_MAX), threshold);
 				thresholdWindow.pushImage(threshold);
 				threshold.copyTo(tmp2);
-				
+
 				Imgproc.erode(threshold, threshold, erodeElement);
 
 				Imgproc.dilate(threshold, threshold, dilateElement);
@@ -234,8 +245,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 					if (r.area() > 7000) {
 						largeBadRectangle = r;
 					}
-					if (r.area() > 500 || r.width / r.height > 2) {
-
+					if (r.area() > 500 || r.width / r.height > 2 && r.height < r.width) {
+						Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
 						Mat centerSeventyFive = new Mat();
 						Rect midSeventyFive = new Rect((int) (r.tl().x) + (int) (r.width * .25),
 								(int) (r.tl().y)/* + (int)(r.height * .25) */, (int) (r.width * .75),
@@ -255,8 +266,9 @@ public class VisionProcess implements KeyListener, MouseListener {
 							}
 						}
 
-						if (Core.sumElems(tmp2.submat(midSeventyFive)).val[0] / r.area() > 100
-								&& Core.sumElems(tmp2.submat(midSeventyFive)).val[0] / r.area() < 200) {
+						if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
+								&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250) {
+							System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
 
 							if (r.area() > 7000) {
 
@@ -288,6 +300,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 					Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", frame);
 					Imgproc.line(orig, new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width/2,0), 
 							new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width/2,10000), new Scalar(255,0,0));
+					Imgproc.line(orig, new Point(0,boundingRect2.get(maxId).y+ boundingRect2.get(maxId).height/2), 
+							new Point(10000,boundingRect2.get(maxId).y + boundingRect2.get(maxId).height/2), new Scalar(255,0,0));
 
 				}
 
