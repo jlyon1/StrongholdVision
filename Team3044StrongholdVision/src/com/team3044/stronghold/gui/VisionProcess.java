@@ -83,6 +83,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	Mat hierarchy = new Mat();
 	Mat erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
 	Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+	Mat noProcessing = new Mat();
 
 	MatOfPoint contour;
 	int biggestRectid = 0;
@@ -136,6 +137,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 			onLoad();
 			frame = new Mat();
 			blank = new Mat();
+			camera = new VideoCapture();
 			threshold = new Mat();
 			temp = new Mat();
 			orig = new Mat();
@@ -171,14 +173,19 @@ public class VisionProcess implements KeyListener, MouseListener {
 			break;
 		case DEBUG:
 			countDebug += 1;
-			thresholdWindow.setVisible(true);
+			if(!thresholdWindow.isVisible()){
+				state = MAIN_LOOP;
+			}
+			
 			thresholdWindow.repaint();
-			Imgcodecs.imwrite("C:\\Opencv3.0.0\\images\\" + countDebug + ".jpg", orig);
+			Imgcodecs.imwrite("C:\\Opencv3.0.0\\images\\" + countDebug + ".jpg", noProcessing);
 		case MAIN_LOOP: {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
 
 			camera.read(frame);
+			if(state == DEBUG)
+				frame.copyTo(noProcessing);
 			if (frame.size().width > 0) {
 				count += 1;
 				
@@ -424,42 +431,19 @@ public class VisionProcess implements KeyListener, MouseListener {
 	}
 
 	public void onAxis() {
-		this.state = INIT;
+		camera.release();
+		isAxis = true;
+		onSave(true);
+		state = INIT;
 
-		BufferedWriter writer;
-		try {
-			writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
-					StandardOpenOption.WRITE);
-			writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
-					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nAXIS");
-
-			writer.flush();
-			writer.close();
-			this.isAxis = true;
-		} catch (IOException e1) {
-
-			e1.printStackTrace();
-		}
 		System.out.println("axis");
 	}
 
 	public void onLaptop() {
-		this.state = INIT;
+		
 		camera.release();
-		BufferedWriter writer;
-		try {
-			writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
-					StandardOpenOption.WRITE);
-			writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
-					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nLAPTOP");
-
-			writer.flush();
-			writer.close();
-			this.isAxis = false;
-		} catch (IOException e1) {
-
-			e1.printStackTrace();
-		}
+		this.onSave(false);
+		this.state = INIT;
 		System.out.println("laptop");
 	}
 
@@ -476,6 +460,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		if (state == DEBUG) {
 			this.state = MAIN_LOOP;
 		} else {
+			thresholdWindow.setVisible(true);
 			state = DEBUG;
 		}
 		System.out.println("debug");
@@ -487,8 +472,32 @@ public class VisionProcess implements KeyListener, MouseListener {
 		System.out.println("reconnect");
 	}
 
-	private void onSave() {
-		// TODO Auto-generated method stub
+	private void onSave(boolean axis) {
+		BufferedWriter writer;
+		try {
+			if(axis){
+			writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
+					StandardOpenOption.WRITE);
+			writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
+					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nAXIS");
+
+			writer.flush();
+			writer.close();
+			this.isAxis = true;
+			}else{
+				writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
+						StandardOpenOption.WRITE);
+				writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
+						+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nLaptop");
+
+				writer.flush();
+				writer.close();
+				this.isAxis = false;
+			}
+		} catch (IOException e1) {
+
+			e1.printStackTrace();
+		}
 
 	}
 
@@ -583,7 +592,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	@Override
 	public void keyTyped(KeyEvent key) {
 		if (key.getKeyChar() == 's') {
-			this.onSave();
+			this.onSave(true);
 		} else if (key.getKeyChar() == 'c') {
 			this.onCalib();
 		} else if (key.getKeyChar() == 'd') {
