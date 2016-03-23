@@ -201,8 +201,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
 
-			// camera.read(frame);
-			frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image.jpg");
+			camera.read(frame);
+			//frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image.jpg");
 			if (state == DEBUG)
 				frame.copyTo(noProcessing);
 			if (frame.size().width > 0) {
