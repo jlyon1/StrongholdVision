@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.sql.Date;
+import java.time.Instant;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
@@ -102,7 +104,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 	
 	int countDebug = 0;
 
-	TextboxWindow tb = new TextboxWindow("TEST", 100, 100);
 	public VisionProcess() {
 		thresholdWindow.setVisible(false);
 		selector.setVisible(true);
@@ -129,6 +130,13 @@ public class VisionProcess implements KeyListener, MouseListener {
 			return false;
 		}
 
+	}
+	
+	public void drawGuides(Mat image){
+		Imgproc.line(image, new Point(160 + offset + 5, 0), new Point(160 + offset + 5.0,1000), new Scalar(0,255,0));
+		Imgproc.line(image, new Point(160 + offset - 5, 0), new Point(160 + offset - 5.0,1000), new Scalar(0,255,0));
+		Imgproc.line(image, new Point(0, 140), new Point(1000,140), new Scalar(0,255,0));
+		Imgproc.line(image, new Point(0, 190), new Point(1000,190), new Scalar(0,255,0));
 	}
 
 	public void process() {
@@ -176,14 +184,22 @@ public class VisionProcess implements KeyListener, MouseListener {
 			if(!thresholdWindow.isVisible()){
 				state = MAIN_LOOP;
 			}
-			
 			thresholdWindow.repaint();
-			Imgcodecs.imwrite("C:\\Opencv3.0.0\\images\\" + countDebug + ".jpg", noProcessing);
+			if(!Files.exists(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours() + "\\" + Date.from(Instant.now()).getMinutes()))){
+				try {
+					Files.createDirectories(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours()+ "\\" + Date.from(Instant.now()).getMinutes()));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			Imgcodecs.imwrite("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours() + "\\" + Date.from(Instant.now()).getMinutes() +"\\"+ countDebug + ".jpg", noProcessing);
 		case MAIN_LOOP: {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
 
-			camera.read(frame);
+			//camera.read(frame);
+			frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image3.jpg");
 			if(state == DEBUG)
 				frame.copyTo(noProcessing);
 			if (frame.size().width > 0) {
@@ -253,28 +269,30 @@ public class VisionProcess implements KeyListener, MouseListener {
 						largeBadRectangle = r;
 					}
 					if (r.area() > 500 || r.width / r.height > 2 && r.height < r.width) {
-						Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
+						//Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
 						Mat centerSeventyFive = new Mat();
 						Rect midSeventyFive = new Rect((int) (r.tl().x) + (int) (r.width * .25),
-								(int) (r.tl().y)/* + (int)(r.height * .25) */, (int) (r.width * .75),
+								(int) (r.tl().y)/* + (int)(r.height * .25) */, (int) (r.width * .5),
 								(int) (r.height * .75));
 						centerSeventyFive = tmp2.submat(midSeventyFive);
-
+						double count = 0;
 						for (int j = midSeventyFive.x; j < midSeventyFive.x + midSeventyFive.size().width; j++) {
 							for (int k = midSeventyFive.y; k < midSeventyFive.y + midSeventyFive.size().height; k++) {
 
 								if (tmp2.get(k, j)[0] == 255) {
 									tmp2.put(k, j, 0);
-
+									count += 1;
 								} else {
 									tmp2.put(k, j, 255);
 
 								}
 							}
 						}
+						//Imgproc.putText(orig, String.valueOf(count), midSeventyFive.tl(), 1, 1, new Scalar(0,0,255));
+						//Imgproc.rectangle(orig, midSeventyFive.tl(), midSeventyFive.br(), new Scalar(0,0,255));
 
 						if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
-								&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250) {
+								&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250 && count < 150) {
 							System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
 
 							if (r.area() > 7000) {
@@ -302,6 +320,11 @@ public class VisionProcess implements KeyListener, MouseListener {
 					}
 				}
 				if (boundingRect2.size() > 0) {
+					Main.sendRectangles(boundingRect2, 
+							maxId, 
+							visionTable, 
+							orig,(int)(offset + .5));
+					
 					Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
 							new Scalar(255, 0, 0), 1);
 					Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", frame);
@@ -313,6 +336,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 				}
 
 				Mat finalMat = new Mat();
+				this.drawGuides(orig);
 				orig.copyTo(finalMat);
 				Imgproc.resize(finalMat, finalMat, new Size(640, 480));
 				mainImage.pushImage(finalMat);

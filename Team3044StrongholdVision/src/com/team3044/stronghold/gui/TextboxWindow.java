@@ -8,7 +8,7 @@ import javax.swing.JPanel;
 import javax.swing.JSlider;
 
 public class TextboxWindow extends JFrame{
-	public TextboxWindow(String name, int width, int height) {
+	public TextboxWindow(String name, int width, int height,int a) {
 		setTitle(name);
 		setSize(width, height); 
 		setLocation(10, 200); 

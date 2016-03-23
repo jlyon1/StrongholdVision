@@ -22,7 +22,7 @@ public class ImageWindow extends JFrame {
 		setTitle(name);
 		this.exitOnClose = exitOnClose;
 		setSize(width, height); 
-		setLocation(10, 200); 
+		setLocation(10, 10); 
 		Container pane = this.getContentPane();
 		pane.addMouseListener(process);
 		p.setVisible(true);
@@ -39,8 +39,9 @@ public class ImageWindow extends JFrame {
 	}
 	public ImageWindow(String name, int width, int height) {
 		setTitle(name);
+		setLocation(10, 10); 
 		setSize(width, height); 
-		setLocation(10, 200); 
+		
 		Container pane = this.getContentPane();
 		p.setVisible(true);
 		pane.add(p);

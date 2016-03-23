@@ -39,11 +39,9 @@ public class Main {
 
 	static Point lastGood = new Point(0, 0);
 	int count2 = 0;
-	
 
-	
 	public static void sendRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable,
-			Mat orig) {
+			Mat orig, int newOffset) {
 		if (boundingRects.size() > 0) {
 			Rect r = boundingRects.get(biggestRectid);
 			if (lastGood.x == 0) {
@@ -56,12 +54,14 @@ public class Main {
 			if (Math.abs(lastGood.x - r.x) < 30) {
 				lastGood = r.tl();
 				System.out.println(r.width);
-				visionTable.putNumber("DIST", r.y);
-				if (160 - (r.x + (r.width / 2.0)) + offset < 155 && r.width > 20) {
-					visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + offset));
-					visionTable.putBoolean("TARGET", true);
-				} else {
-					visionTable.putBoolean("TARGET", false);
+				if (visionTable != null) {
+					visionTable.putNumber("DIST", r.y);
+					if (160 - (r.x + (r.width / 2.0)) + newOffset < 155 && r.width > 20) {
+						visionTable.putNumber("ANGLE", (160 - (r.x + (r.width / 2.0)) + newOffset));
+						visionTable.putBoolean("TARGET", true);
+					} else {
+						visionTable.putBoolean("TARGET", false);
+					}
 				}
 			} else {
 				count += 1;
@@ -86,7 +86,7 @@ public class Main {
 		v = new VideoCapture(Address);
 		console.println("Opening Camera: " + Address);
 		v.open(Address);
-		
+
 		try {
 			Thread.sleep(300);
 		} catch (InterruptedException e) {
@@ -107,12 +107,12 @@ public class Main {
 	public static void main(String[] args) {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		VisionProcess vision = new VisionProcess();
-		for(int i = 0; i < 10000000; i ++){
+		for (int i = 0; i < 10000000; i++) {
 			vision.process();
 		}
-		
+
 		(new Scanner(System.in)).nextLine();
-		
+
 	}
 
 }
