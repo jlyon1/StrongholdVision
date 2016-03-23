@@ -101,7 +101,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	private int oldClickCount = 0;
 
 	NetworkTable visionTable;
-	
+
 	int countDebug = 0;
 
 	public VisionProcess() {
@@ -131,12 +131,12 @@ public class VisionProcess implements KeyListener, MouseListener {
 		}
 
 	}
-	
-	public void drawGuides(Mat image){
-		Imgproc.line(image, new Point(160 + offset + 5, 0), new Point(160 + offset + 5.0,1000), new Scalar(0,255,0));
-		Imgproc.line(image, new Point(160 + offset - 5, 0), new Point(160 + offset - 5.0,1000), new Scalar(0,255,0));
-		Imgproc.line(image, new Point(0, 140), new Point(1000,140), new Scalar(0,255,0));
-		Imgproc.line(image, new Point(0, 190), new Point(1000,190), new Scalar(0,255,0));
+
+	public void drawGuides(Mat image) {
+		Imgproc.line(image, new Point(160 + offset + 5, 0), new Point(160 + offset + 5.0, 1000), new Scalar(0, 255, 0));
+		Imgproc.line(image, new Point(160 + offset - 5, 0), new Point(160 + offset - 5.0, 1000), new Scalar(0, 255, 0));
+		Imgproc.line(image, new Point(0, 140), new Point(1000, 140), new Scalar(0, 255, 0));
+		Imgproc.line(image, new Point(0, 190), new Point(1000, 190), new Scalar(0, 255, 0));
 	}
 
 	public void process() {
@@ -156,8 +156,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 			state = CONNECT_CAMERA;
 			break;
 		case CONNECT_CAMERA:
-			//if (camera.isOpened())
-				///camera.release();
+			// if (camera.isOpened())
+			/// camera.release();
 			if (isAxis) {
 				if ((camera = Main.openCamera(output, camera)) != null) {
 					output.print("Camera Opened");
@@ -181,40 +181,43 @@ public class VisionProcess implements KeyListener, MouseListener {
 			break;
 		case DEBUG:
 			countDebug += 1;
-			if(!thresholdWindow.isVisible()){
+			if (!thresholdWindow.isVisible()) {
 				state = MAIN_LOOP;
 			}
 			thresholdWindow.repaint();
-			if(!Files.exists(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours() + "\\" + Date.from(Instant.now()).getMinutes()))){
+			if (!Files.exists(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours() + "\\"
+					+ Date.from(Instant.now()).getMinutes()))) {
 				try {
-					Files.createDirectories(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours()+ "\\" + Date.from(Instant.now()).getMinutes()));
+					Files.createDirectories(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours()
+							+ "\\" + Date.from(Instant.now()).getMinutes()));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
-			Imgcodecs.imwrite("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours() + "\\" + Date.from(Instant.now()).getMinutes() +"\\"+ countDebug + ".jpg", noProcessing);
+			Imgcodecs.imwrite("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours() + "\\"
+					+ Date.from(Instant.now()).getMinutes() + "\\" + countDebug + ".jpg", noProcessing);
 		case MAIN_LOOP: {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
 
-			//camera.read(frame);
-			frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image3.jpg");
-			if(state == DEBUG)
+			// camera.read(frame);
+			frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image.jpg");
+			if (state == DEBUG)
 				frame.copyTo(noProcessing);
 			if (frame.size().width > 0) {
 				count += 1;
-				
+
 				ArrayList<Mat> channels = new ArrayList<Mat>();
-				/*for(int i =0; i < frame.size().width; i ++){
-					for(int j = 0; j < frame.size().height; j ++){
-						if(frame.get(j, i)[0] > frame.get(j, i)[1]){
-							frame.put(j, i, new double[]{255,0,0});
-						}
-					}
-				}*/
+				/*
+				 * for(int i =0; i < frame.size().width; i ++){ for(int j = 0; j
+				 * < frame.size().height; j ++){ if(frame.get(j, i)[0] >
+				 * frame.get(j, i)[1]){ frame.put(j, i, new double[]{255,0,0});
+				 * } } }
+				 */
 				Core.split(frame, channels);
-				//channels.set(0, Mat.zeros(channels.get(0).size(), channels.get(0).type()));
+				// channels.set(0, Mat.zeros(channels.get(0).size(),
+				// channels.get(0).type()));
 				Core.merge(channels, frame);
 				frame.copyTo(orig);
 				Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2HSV);
@@ -248,13 +251,13 @@ public class VisionProcess implements KeyListener, MouseListener {
 						contours.set(i, approxContour);
 
 						boundingRects.add(r);
-						if(state == DEBUG)
+						if (state == DEBUG)
 							Imgproc.drawContours(orig, contours, i, new Scalar(0, 255, 0));
 					} else {
-						if(state == DEBUG)
+						if (state == DEBUG)
 							Imgproc.drawContours(orig, contours, i, new Scalar(0, 0, 255));
 						contours.set(i, new MatOfPoint());
-						
+
 					}
 
 				}
@@ -269,7 +272,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 						largeBadRectangle = r;
 					}
 					if (r.area() > 500 || r.width / r.height > 2 && r.height < r.width) {
-						//Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
+						// Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0,
+						// 255, 0));
 						Mat centerSeventyFive = new Mat();
 						Rect midSeventyFive = new Rect((int) (r.tl().x) + (int) (r.width * .25),
 								(int) (r.tl().y)/* + (int)(r.height * .25) */, (int) (r.width * .5),
@@ -288,9 +292,14 @@ public class VisionProcess implements KeyListener, MouseListener {
 								}
 							}
 						}
-						//Imgproc.putText(orig, String.valueOf(count), midSeventyFive.tl(), 1, 1, new Scalar(0,0,255));
-						//Imgproc.rectangle(orig, midSeventyFive.tl(), midSeventyFive.br(), new Scalar(0,0,255));
-
+						if (state == DEBUG) {
+							Imgproc.putText(orig, String.valueOf(count), midSeventyFive.tl(), 1, 0.5,
+									new Scalar(0, 0, 255));
+							Imgproc.rectangle(orig, midSeventyFive.tl(), midSeventyFive.br(), new Scalar(0, 0, 255));
+							Imgproc.putText(orig, String.valueOf(Core.sumElems(tmp2.submat(r)).val[0] / r.area()), midSeventyFive.br(), 1, 0.5,
+									new Scalar(0, 0, 255));
+						}
+						
 						if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
 								&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250 && count < 150) {
 							System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
@@ -320,18 +329,17 @@ public class VisionProcess implements KeyListener, MouseListener {
 					}
 				}
 				if (boundingRect2.size() > 0) {
-					Main.sendRectangles(boundingRect2, 
-							maxId, 
-							visionTable, 
-							orig,(int)(offset + .5));
-					
+					Main.sendRectangles(boundingRect2, maxId, visionTable, orig, (int) (offset + .5));
+
 					Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
 							new Scalar(255, 0, 0), 1);
 					Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", frame);
-					Imgproc.line(orig, new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width/2,0), 
-							new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width/2,10000), new Scalar(255,0,0));
-					Imgproc.line(orig, new Point(0,boundingRect2.get(maxId).y+ boundingRect2.get(maxId).height/2), 
-							new Point(10000,boundingRect2.get(maxId).y + boundingRect2.get(maxId).height/2), new Scalar(255,0,0));
+					Imgproc.line(orig, new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 0),
+							new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 10000),
+							new Scalar(255, 0, 0));
+					Imgproc.line(orig, new Point(0, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
+							new Point(10000, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
+							new Scalar(255, 0, 0));
 
 				}
 
@@ -356,11 +364,11 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 		case CALIBRATE:
 			frame.copyTo(orig);
-			//Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
+			// Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
 			this.mainImage.pushImage(orig);
 			System.out.println(orig.size());
 			if (this.clickCount != oldClickCount) {
-				
+
 				this.H_MIN = (int) orig.get(mouseX, mouseY)[0];
 				this.S_MIN = (int) orig.get(mouseX, mouseY)[1];
 				this.V_MIN = (int) orig.get(mouseX, mouseY)[2];
@@ -397,7 +405,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 		}
 	}
-
 
 	public void loadConfigFile(String file) throws IOException {
 		if (Files.isReadable(configSaveLocation)) {
@@ -464,7 +471,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	}
 
 	public void onLaptop() {
-		
+
 		camera.release();
 		this.onSave(false);
 		this.state = INIT;
@@ -499,20 +506,22 @@ public class VisionProcess implements KeyListener, MouseListener {
 	private void onSave(boolean axis) {
 		BufferedWriter writer;
 		try {
-			if(axis){
-			writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
-					StandardOpenOption.WRITE);
-			writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
-					+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nAXIS");
-
-			writer.flush();
-			writer.close();
-			this.isAxis = true;
-			}else{
+			if (axis) {
 				writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
 						StandardOpenOption.WRITE);
 				writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
-						+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset + "\nLaptop");
+						+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset
+						+ "\nAXIS");
+
+				writer.flush();
+				writer.close();
+				this.isAxis = true;
+			} else {
+				writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\config.txt"),
+						StandardOpenOption.WRITE);
+				writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
+						+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset
+						+ "\nLaptop");
 
 				writer.flush();
 				writer.close();
