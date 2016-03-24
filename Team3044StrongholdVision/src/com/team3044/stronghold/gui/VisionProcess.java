@@ -39,6 +39,7 @@ import org.opencv.videoio.VideoCapture;
 
 import com.team3044.stronghold.vision.Main;
 
+import edu.wpi.first.smartdashboard.gui.elements.Image;
 import edu.wpi.first.smartdashboard.robot.Robot;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 
@@ -132,11 +133,14 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 	}
 
-	public void drawGuides(Mat image) {
+	public void drawGuides(Mat image, Point p) {
 		Imgproc.line(image, new Point(160 + offset + 5, 0), new Point(160 + offset + 5.0, 1000), new Scalar(0, 255, 0));
 		Imgproc.line(image, new Point(160 + offset - 5, 0), new Point(160 + offset - 5.0, 1000), new Scalar(0, 255, 0));
 		Imgproc.line(image, new Point(0, 140), new Point(1000, 140), new Scalar(0, 255, 0));
 		Imgproc.line(image, new Point(0, 190), new Point(1000, 190), new Scalar(0, 255, 0));
+		if(p.inside(new Rect((int)(160 + offset - 5),140, (int)(160 + offset - 5), 190))){
+			Imgproc.rectangle(image, new Point(0,0), new Point(image.size().width,image.size().height), new Scalar(0,255,0),8, 0, 0);
+		}
 	}
 
 	public void process() {
@@ -201,8 +205,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
 
-			camera.read(frame);
-			//frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image.jpg");
+			//camera.read(frame);
+			frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image.jpg");
 			if (state == DEBUG)
 				frame.copyTo(noProcessing);
 			if (frame.size().width > 0) {
@@ -265,13 +269,14 @@ public class VisionProcess implements KeyListener, MouseListener {
 				biggestRectid = 0;
 				ArrayList<Rect> boundingRect2 = new ArrayList<Rect>();
 				Rect largeBadRectangle = new Rect();
+
 				for (int i = 0; i < boundingRects.size(); i++) {
 
 					Rect r = boundingRects.get(i);
 					if (r.area() > 7000) {
 						largeBadRectangle = r;
 					}
-					if (r.area() > 500 || r.width / r.height > 2 && r.height < r.width) {
+					if (r.area() > 500 || (r.width / r.height > 2 && r.height < r.width)) {
 						// Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0,
 						// 255, 0));
 						Mat centerSeventyFive = new Mat();
@@ -328,6 +333,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 						maxId = i;
 					}
 				}
+				Point poi = null;
 				if (boundingRect2.size() > 0) {
 					Main.sendRectangles(boundingRect2, maxId, visionTable, orig, (int) (offset + .5));
 
@@ -340,11 +346,11 @@ public class VisionProcess implements KeyListener, MouseListener {
 					Imgproc.line(orig, new Point(0, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
 							new Point(10000, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
 							new Scalar(255, 0, 0));
-
+					poi = new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2);
 				}
 
 				Mat finalMat = new Mat();
-				this.drawGuides(orig);
+				this.drawGuides(orig,poi);
 				orig.copyTo(finalMat);
 				Imgproc.resize(finalMat, finalMat, new Size(640, 480));
 				mainImage.pushImage(finalMat);
