@@ -45,7 +45,7 @@ import edu.wpi.first.wpilibj.networktables.NetworkTable;
 
 public class VisionProcess implements KeyListener, MouseListener {
 
-	private int state = 6;
+	private int state = 1;
 	final int INIT = 6;
 	final int CONNECT_CAMERA = 0;
 	final int CONNECT_ROBOT = 1;
@@ -138,8 +138,11 @@ public class VisionProcess implements KeyListener, MouseListener {
 		Imgproc.line(image, new Point(160 + offset - 5, 0), new Point(160 + offset - 5.0, 1000), new Scalar(0, 255, 0));
 		Imgproc.line(image, new Point(0, 140), new Point(1000, 140), new Scalar(0, 255, 0));
 		Imgproc.line(image, new Point(0, 190), new Point(1000, 190), new Scalar(0, 255, 0));
-		if(p.inside(new Rect((int)(160 + offset - 5),140, (int)(160 + offset - 5), 190))){
-			Imgproc.rectangle(image, new Point(0,0), new Point(image.size().width,image.size().height), new Scalar(0,255,0),8, 0, 0);
+		if (p != null) {
+			if (p.inside(new Rect((int) (160 + offset - 5), 140, (int) (160 + offset - 5), 190))) {
+				Imgproc.rectangle(image, new Point(0, 0), new Point(image.size().width, image.size().height),
+						new Scalar(0, 255, 0), 8, 0, 0);
+			}
 		}
 	}
 
@@ -179,7 +182,17 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 		case CONNECT_ROBOT:
 			this.connectToRobot("roboRIO-3044-frc.local");
+			if(visionTable.isConnected()){
 			this.state = INIT;
+			}else{
+				output.println("Could not connect to robot, Trying again");
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			break;
 		case CONNECT_SERIAL:
 			break;
@@ -204,9 +217,9 @@ public class VisionProcess implements KeyListener, MouseListener {
 		case MAIN_LOOP: {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
-
-			//camera.read(frame);
-			frame = Imgcodecs.imread("C:\\Users\\Joey\\Desktop\\image.jpg");
+			count += 1;
+			camera.read(frame);
+			//frame = Imgcodecs.imread("C:\\Opencv3.0.0\\images\\9\\47\\" + String.valueOf(count + 1) + ".jpg");
 			if (state == DEBUG)
 				frame.copyTo(noProcessing);
 			if (frame.size().width > 0) {
@@ -301,10 +314,10 @@ public class VisionProcess implements KeyListener, MouseListener {
 							Imgproc.putText(orig, String.valueOf(count), midSeventyFive.tl(), 1, 0.5,
 									new Scalar(0, 0, 255));
 							Imgproc.rectangle(orig, midSeventyFive.tl(), midSeventyFive.br(), new Scalar(0, 0, 255));
-							Imgproc.putText(orig, String.valueOf(Core.sumElems(tmp2.submat(r)).val[0] / r.area()), midSeventyFive.br(), 1, 0.5,
-									new Scalar(0, 0, 255));
+							Imgproc.putText(orig, String.valueOf(Core.sumElems(tmp2.submat(r)).val[0] / r.area()),
+									midSeventyFive.br(), 1, 0.5, new Scalar(0, 0, 255));
 						}
-						
+
 						if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
 								&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250 && count < 150) {
 							System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
@@ -346,11 +359,13 @@ public class VisionProcess implements KeyListener, MouseListener {
 					Imgproc.line(orig, new Point(0, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
 							new Point(10000, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
 							new Scalar(255, 0, 0));
-					poi = new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2);
+					poi = new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2,
+							boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2);
 				}
 
 				Mat finalMat = new Mat();
-				this.drawGuides(orig,poi);
+
+				this.drawGuides(orig, poi);
 				orig.copyTo(finalMat);
 				Imgproc.resize(finalMat, finalMat, new Size(640, 480));
 				mainImage.pushImage(finalMat);
