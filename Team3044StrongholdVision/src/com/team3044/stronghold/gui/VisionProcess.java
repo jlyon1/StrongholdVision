@@ -53,6 +53,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	final int MAIN_LOOP = 3;
 	final int CALIBRATE = 4;
 	final int DEBUG = 5;
+	
 
 	VideoCapture camera = new VideoCapture();
 	Mat cameraFrame = new Mat();
