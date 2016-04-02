@@ -39,6 +39,8 @@ public class Main {
 
 	static Point lastGood = new Point(0, 0);
 	int count2 = 0;
+	
+	public static boolean shouldRun = true;
 
 	public static void sendRectangles(ArrayList<Rect> boundingRects, int biggestRectid, NetworkTable visionTable,
 			Mat orig, int newOffset) {

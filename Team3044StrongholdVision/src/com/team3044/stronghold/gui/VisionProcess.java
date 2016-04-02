@@ -37,6 +37,8 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
+import com.team3044.stronghold.vision.AxisGrabber;
+import com.team3044.stronghold.vision.CameraIsNotOpenException;
 import com.team3044.stronghold.vision.Main;
 
 import edu.wpi.first.smartdashboard.robot.Robot;
@@ -52,7 +54,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 	final int MAIN_LOOP = 3;
 	final int CALIBRATE = 4;
 	final int DEBUG = 5;
-
 
 	VideoCapture camera = new VideoCapture();
 	Mat cameraFrame = new Mat();
@@ -102,6 +103,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 	private int oldClickCount = 0;
 
 	NetworkTable visionTable;
+
+	AxisGrabber grabber;
 
 	int countDebug = 0;
 
@@ -175,16 +178,23 @@ public class VisionProcess implements KeyListener, MouseListener {
 			} else {
 				this.camera = new VideoCapture(0);
 				System.out.println("Using Laptop Camera");
-				if (camera.isOpened())
-					this.state = MAIN_LOOP;
+				if (camera.isOpened()) {
+					try {
+						grabber = new AxisGrabber(camera);
+					} catch (CameraIsNotOpenException e) {
+						camera.release();
+						this.state = INIT;
+					}
+					state = MAIN_LOOP;
+				}
 			}
 			break;
 
 		case CONNECT_ROBOT:
 			this.connectToRobot("roboRIO-3044-frc.local");
-			if(visionTable.isConnected()){
-			this.state = INIT;
-			}else{
+			if (visionTable.isConnected()) {
+				this.state = INIT;
+			} else {
 				output.println("Could not connect to robot, Trying again");
 				try {
 					Thread.sleep(1000);
@@ -218,165 +228,168 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
 			count += 1;
-			camera.read(frame);
-			//frame = Imgcodecs.imread("C:\\Opencv3.0.0\\images\\9\\47\\" + String.valueOf(count + 1) + ".jpg");
-			if (state == DEBUG)
-				frame.copyTo(noProcessing);
-			if (frame.size().width > 0) {
-				count += 1;
+			if ((frame = grabber.getBuffer()[grabber.getJ()]) != null && 
+					grabber.getTimeStamps()[grabber.getJ()] != 10) {
+				
+				if (state == DEBUG)
+					frame.copyTo(noProcessing);
 
-				ArrayList<Mat> channels = new ArrayList<Mat>();
-				/*
-				 * for(int i =0; i < frame.size().width; i ++){ for(int j = 0; j
-				 * < frame.size().height; j ++){ if(frame.get(j, i)[0] >
-				 * frame.get(j, i)[1]){ frame.put(j, i, new double[]{255,0,0});
-				 * } } }
-				 */
-				Core.split(frame, channels);
-				// channels.set(0, Mat.zeros(channels.get(0).size(),
-				// channels.get(0).type()));
-				Core.merge(channels, frame);
-				frame.copyTo(orig);
-				Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2HSV);
-				Core.inRange(frame, new Scalar(H_MIN, S_MIN, V_MIN), new Scalar(H_MAX, S_MAX, V_MAX), threshold);
-				thresholdWindow.pushImage(threshold);
-				threshold.copyTo(tmp2);
+				if (frame.size().width > 0) {
+					count += 1;
 
-				Imgproc.erode(threshold, threshold, erodeElement);
+					ArrayList<Mat> channels = new ArrayList<Mat>();
 
-				Imgproc.dilate(threshold, threshold, dilateElement);
+					Core.split(frame, channels);
+					// channels.set(0, Mat.zeros(channels.get(0).size(),
+					// channels.get(0).type()));
+					Core.merge(channels, frame);
+					frame.copyTo(orig);
+					Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2HSV);
+					Core.inRange(frame, new Scalar(H_MIN, S_MIN, V_MIN), new Scalar(H_MAX, S_MAX, V_MAX), threshold);
+					thresholdWindow.pushImage(threshold);
+					threshold.copyTo(tmp2);
 
-				ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-				Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE,
-						new Point(0, 0));
+					Imgproc.erode(threshold, threshold, erodeElement);
 
-				boundingRects = new ArrayList<Rect>();
+					Imgproc.dilate(threshold, threshold, dilateElement);
 
-				for (int i = 0; i < contours.size(); i++) {
+					ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+					Imgproc.findContours(threshold, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE,
+							new Point(0, 0));
 
-					contour = contours.get(i);
-					MatOfPoint2f thisContour2f = new MatOfPoint2f();
-					MatOfPoint approxContour = new MatOfPoint();
-					MatOfPoint2f approxContour2f = new MatOfPoint2f();
-					contour.convertTo(thisContour2f, CvType.CV_32FC2);
-					Imgproc.approxPolyDP(thisContour2f, approxContour2f, 2, true);
-					approxContour2f.convertTo(approxContour, CvType.CV_32S);
-					if (approxContour.size().height < 12 && approxContour.size().height > 5) {
+					boundingRects = new ArrayList<Rect>();
 
-						System.out.println(approxContour.get(0, 0)[0]);
-						Rect r = Imgproc.boundingRect(contour);
-						contours.set(i, approxContour);
+					for (int i = 0; i < contours.size(); i++) {
 
-						boundingRects.add(r);
-						if (state == DEBUG)
-							Imgproc.drawContours(orig, contours, i, new Scalar(0, 255, 0));
-					} else {
-						if (state == DEBUG)
-							Imgproc.drawContours(orig, contours, i, new Scalar(0, 0, 255));
-						contours.set(i, new MatOfPoint());
+						contour = contours.get(i);
+						MatOfPoint2f thisContour2f = new MatOfPoint2f();
+						MatOfPoint approxContour = new MatOfPoint();
+						MatOfPoint2f approxContour2f = new MatOfPoint2f();
+						contour.convertTo(thisContour2f, CvType.CV_32FC2);
+						Imgproc.approxPolyDP(thisContour2f, approxContour2f, 2, true);
+						approxContour2f.convertTo(approxContour, CvType.CV_32S);
+						if (approxContour.size().height < 12 && approxContour.size().height > 5) {
+
+							System.out.println(approxContour.get(0, 0)[0]);
+							Rect r = Imgproc.boundingRect(contour);
+							contours.set(i, approxContour);
+
+							boundingRects.add(r);
+							if (state == DEBUG)
+								Imgproc.drawContours(orig, contours, i, new Scalar(0, 255, 0));
+						} else {
+							if (state == DEBUG)
+								Imgproc.drawContours(orig, contours, i, new Scalar(0, 0, 255));
+							contours.set(i, new MatOfPoint());
+
+						}
 
 					}
 
-				}
+					biggestRectid = 0;
+					ArrayList<Rect> boundingRect2 = new ArrayList<Rect>();
+					Rect largeBadRectangle = new Rect();
 
-				biggestRectid = 0;
-				ArrayList<Rect> boundingRect2 = new ArrayList<Rect>();
-				Rect largeBadRectangle = new Rect();
+					for (int i = 0; i < boundingRects.size(); i++) {
 
-				for (int i = 0; i < boundingRects.size(); i++) {
+						Rect r = boundingRects.get(i);
+						if (r.area() > 7000) {
+							largeBadRectangle = r;
+						}
+						if (r.area() > 500 || (r.width / r.height > 2 && r.height < r.width)) {
+							// Imgproc.rectangle(orig, r.tl(), r.br(), new
+							// Scalar(0,
+							// 255, 0));
+							Mat centerSeventyFive = new Mat();
+							Rect midSeventyFive = new Rect((int) (r.tl().x) + (int) (r.width * .25), (int) (r
+									.tl().y)/* + (int)(r.height * .25) */, (int) (r.width * .5),
+									(int) (r.height * .75));
+							centerSeventyFive = tmp2.submat(midSeventyFive);
+							double count = 0;
+							for (int j = midSeventyFive.x; j < midSeventyFive.x + midSeventyFive.size().width; j++) {
+								for (int k = midSeventyFive.y; k < midSeventyFive.y
+										+ midSeventyFive.size().height; k++) {
 
-					Rect r = boundingRects.get(i);
-					if (r.area() > 7000) {
-						largeBadRectangle = r;
-					}
-					if (r.area() > 500 || (r.width / r.height > 2 && r.height < r.width)) {
-						// Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0,
-						// 255, 0));
-						Mat centerSeventyFive = new Mat();
-						Rect midSeventyFive = new Rect((int) (r.tl().x) + (int) (r.width * .25),
-								(int) (r.tl().y)/* + (int)(r.height * .25) */, (int) (r.width * .5),
-								(int) (r.height * .75));
-						centerSeventyFive = tmp2.submat(midSeventyFive);
-						double count = 0;
-						for (int j = midSeventyFive.x; j < midSeventyFive.x + midSeventyFive.size().width; j++) {
-							for (int k = midSeventyFive.y; k < midSeventyFive.y + midSeventyFive.size().height; k++) {
+									if (tmp2.get(k, j)[0] == 255) {
+										tmp2.put(k, j, 0);
+										count += 1;
+									} else {
+										tmp2.put(k, j, 255);
 
-								if (tmp2.get(k, j)[0] == 255) {
-									tmp2.put(k, j, 0);
-									count += 1;
+									}
+								}
+							}
+							if (state == DEBUG) {
+								Imgproc.putText(orig, String.valueOf(count), midSeventyFive.tl(), 1, 0.5,
+										new Scalar(0, 0, 255));
+								Imgproc.rectangle(orig, midSeventyFive.tl(), midSeventyFive.br(),
+										new Scalar(0, 0, 255));
+								Imgproc.putText(orig, String.valueOf(Core.sumElems(tmp2.submat(r)).val[0] / r.area()),
+										midSeventyFive.br(), 1, 0.5, new Scalar(0, 0, 255));
+							}
+
+							if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
+									&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250 && count < 150) {
+								System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
+
+								if (r.area() > 7000) {
+
 								} else {
-									tmp2.put(k, j, 255);
-
+									if (!largeBadRectangle.contains(r.tl())) {
+										boundingRect2.add(r);
+										Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
+									}
 								}
-							}
-						}
-						if (state == DEBUG) {
-							Imgproc.putText(orig, String.valueOf(count), midSeventyFive.tl(), 1, 0.5,
-									new Scalar(0, 0, 255));
-							Imgproc.rectangle(orig, midSeventyFive.tl(), midSeventyFive.br(), new Scalar(0, 0, 255));
-							Imgproc.putText(orig, String.valueOf(Core.sumElems(tmp2.submat(r)).val[0] / r.area()),
-									midSeventyFive.br(), 1, 0.5, new Scalar(0, 0, 255));
-						}
 
-						if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
-								&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250 && count < 150) {
-							System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
-
-							if (r.area() > 7000) {
-
-							} else {
-								if (!largeBadRectangle.contains(r.tl())) {
-									boundingRect2.add(r);
-									Imgproc.rectangle(orig, r.tl(), r.br(), new Scalar(0, 255, 0));
-								}
 							}
 
 						}
 
 					}
-
-				}
-				int maxId = 0;
-				for (int i = 0; i < boundingRect2.size(); i++) {
-					Rect r = boundingRect2.get(i);
-					if (r.size().area() > boundingRect2.get(maxId).size().area()
-							&& (r.size().height / r.size().width < 1)) {
-						maxId = i;
-					} else if ((r.size().height / r.size().width < 1) && r.size().area() > 1000) {
-						maxId = i;
+					int maxId = 0;
+					for (int i = 0; i < boundingRect2.size(); i++) {
+						Rect r = boundingRect2.get(i);
+						if (r.size().area() > boundingRect2.get(maxId).size().area()
+								&& (r.size().height / r.size().width < 1)) {
+							maxId = i;
+						} else if ((r.size().height / r.size().width < 1) && r.size().area() > 1000) {
+							maxId = i;
+						}
 					}
-				}
-				Point poi = null;
-				if (boundingRect2.size() > 0) {
-					Main.sendRectangles(boundingRect2, maxId, visionTable, orig, (int) (offset + .5));
+					Point poi = null;
+					if (boundingRect2.size() > 0) {
+						Main.sendRectangles(boundingRect2, maxId, visionTable, orig, (int) (offset + .5));
 
-					Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
-							new Scalar(255, 0, 0), 1);
-					Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", frame);
-					Imgproc.line(orig, new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 0),
-							new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 10000),
-							new Scalar(255, 0, 0));
-					Imgproc.line(orig, new Point(0, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
-							new Point(10000, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
-							new Scalar(255, 0, 0));
-					poi = new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2,
-							boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2);
-				}
+						Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
+								new Scalar(255, 0, 0), 1);
+						Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", frame);
+						Imgproc.line(orig,
+								new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 0),
+								new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 10000),
+								new Scalar(255, 0, 0));
+						Imgproc.line(orig,
+								new Point(0, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
+								new Point(10000, boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2),
+								new Scalar(255, 0, 0));
+						poi = new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2,
+								boundingRect2.get(maxId).y + boundingRect2.get(maxId).height / 2);
+					}
 
-				Mat finalMat = new Mat();
+					Mat finalMat = new Mat();
 
-				this.drawGuides(orig, poi);
-				orig.copyTo(finalMat);
-				Imgproc.resize(finalMat, finalMat, new Size(640, 480));
-				mainImage.pushImage(finalMat);
-				mainImage.repaint();
+					this.drawGuides(orig, poi);
+					orig.copyTo(finalMat);
+					Imgproc.resize(finalMat, finalMat, new Size(640, 480));
+					mainImage.pushImage(finalMat);
+					mainImage.repaint();
 
-				System.out.println("--------End: " + (System.currentTimeMillis() - start) + "---------");
-				if (System.currentTimeMillis() - start < 30) {
-					try {
-						Thread.sleep((long) (30 - (System.currentTimeMillis() - start)));
-					} catch (InterruptedException e) {
-						output.println(e.getMessage());
+					System.out.println("--------End: " + (System.currentTimeMillis() - start) + "---------");
+					if (System.currentTimeMillis() - start < 30) {
+						try {
+							Thread.sleep((long) (30 - (System.currentTimeMillis() - start)));
+						} catch (InterruptedException e) {
+							output.println(e.getMessage());
+						}
 					}
 				}
 			}
@@ -533,7 +546,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 				writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
 						+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset
 						+ "\nAXIS");
-
 
 				writer.flush();
 				writer.close();
