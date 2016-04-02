@@ -39,7 +39,6 @@ import org.opencv.videoio.VideoCapture;
 
 import com.team3044.stronghold.vision.Main;
 
-import edu.wpi.first.smartdashboard.gui.elements.Image;
 import edu.wpi.first.smartdashboard.robot.Robot;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 
@@ -53,7 +52,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	final int MAIN_LOOP = 3;
 	final int CALIBRATE = 4;
 	final int DEBUG = 5;
-	
+
 
 	VideoCapture camera = new VideoCapture();
 	Mat cameraFrame = new Mat();
@@ -534,6 +533,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 				writer.write(H_MIN + "\n" + S_MIN + "\n" + V_MIN + "\n" + H_MAX + "\n" + S_MAX + "\n" + V_MAX + "\n"
 						+ "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg" + "\n" + "COM5\n" + offset
 						+ "\nAXIS");
+
 
 				writer.flush();
 				writer.close();
