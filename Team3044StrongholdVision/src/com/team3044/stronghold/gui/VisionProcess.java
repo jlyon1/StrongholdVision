@@ -57,13 +57,13 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 	VideoCapture camera = new VideoCapture();
 	Mat cameraFrame = new Mat();
-	int count = 0;
+	int mainLoopCount = 0;
 
 	int mouseX = 0;
 	int mouseY = 0;
 	int oldX = 0;
 	int oldY = 0;
-
+	
 	int H_MIN = 0, S_MIN = 0, V_MIN = 0;
 	int H_MAX = 180, S_MAX = 255, V_MAX = 255;
 	double offset = 9;
@@ -107,7 +107,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	AxisGrabber grabber;
 
 	int countDebug = 0;
-
+	public ConsoleWindow console;
 	public VisionProcess() {
 		thresholdWindow.setVisible(false);
 		selector.setVisible(true);
@@ -118,7 +118,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 	public boolean openCamera(ConsoleWindow console) {
 		console.println("Initializing VideoCapture Camera: " + cameraAddr);
-
+		this.console = console;
 		camera.open(cameraAddr);
 
 		try {
@@ -149,6 +149,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void process() {
 		switch (state) {
 		case INIT:
@@ -166,21 +167,30 @@ public class VisionProcess implements KeyListener, MouseListener {
 			state = CONNECT_CAMERA;
 			break;
 		case CONNECT_CAMERA:
-			// if (camera.isOpened())
-			/// camera.release();
+
 			if (isAxis) {
 				if ((camera = Main.openCamera(output, camera)) != null) {
 					output.print("Camera Opened");
 					this.state = MAIN_LOOP;
+					try {
+						grabber = new AxisGrabber(camera, this);
+						Thread t = new Thread(grabber);
+						t.start();
+					} catch (CameraIsNotOpenException e) {
+						camera.release();
+						this.state = INIT;
+					}
 				} else {
 					output.println("Could Not Connect, Trying again");
 				}
 			} else {
 				this.camera = new VideoCapture(0);
-				System.out.println("Using Laptop Camera");
+				
 				if (camera.isOpened()) {
 					try {
-						grabber = new AxisGrabber(camera);
+						grabber = new AxisGrabber(camera,this);
+						Thread t = new Thread(grabber);
+						t.start();
 					} catch (CameraIsNotOpenException e) {
 						camera.release();
 						this.state = INIT;
@@ -218,7 +228,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 					Files.createDirectories(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours()
 							+ "\\" + Date.from(Instant.now()).getMinutes()));
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					
 					e.printStackTrace();
 				}
 			}
@@ -226,22 +236,23 @@ public class VisionProcess implements KeyListener, MouseListener {
 					+ Date.from(Instant.now()).getMinutes() + "\\" + countDebug + ".jpg", noProcessing);
 		case MAIN_LOOP: {
 
-			System.out.println("-------- Start:" + (start = System.currentTimeMillis()) + "---------");
-			count += 1;
-			if ((frame = grabber.getBuffer()[grabber.getJ()]) != null && 
+			
+			mainLoopCount += 1;
+			
+			Mat temporary = new Mat();
+			if ((temporary = grabber.getBuffer()[grabber.getJ()]) != null && 
 					grabber.getTimeStamps()[grabber.getJ()] != 10) {
-				
+				temporary.copyTo(frame);
 				if (state == DEBUG)
 					frame.copyTo(noProcessing);
 
 				if (frame.size().width > 0) {
-					count += 1;
+					mainLoopCount += 1;
 
 					ArrayList<Mat> channels = new ArrayList<Mat>();
 
 					Core.split(frame, channels);
-					// channels.set(0, Mat.zeros(channels.get(0).size(),
-					// channels.get(0).type()));
+
 					Core.merge(channels, frame);
 					frame.copyTo(orig);
 					Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2HSV);
@@ -270,7 +281,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 						approxContour2f.convertTo(approxContour, CvType.CV_32S);
 						if (approxContour.size().height < 12 && approxContour.size().height > 5) {
 
-							System.out.println(approxContour.get(0, 0)[0]);
 							Rect r = Imgproc.boundingRect(contour);
 							contours.set(i, approxContour);
 
@@ -297,14 +307,11 @@ public class VisionProcess implements KeyListener, MouseListener {
 							largeBadRectangle = r;
 						}
 						if (r.area() > 500 || (r.width / r.height > 2 && r.height < r.width)) {
-							// Imgproc.rectangle(orig, r.tl(), r.br(), new
-							// Scalar(0,
-							// 255, 0));
-							Mat centerSeventyFive = new Mat();
+							new Mat();
 							Rect midSeventyFive = new Rect((int) (r.tl().x) + (int) (r.width * .25), (int) (r
 									.tl().y)/* + (int)(r.height * .25) */, (int) (r.width * .5),
 									(int) (r.height * .75));
-							centerSeventyFive = tmp2.submat(midSeventyFive);
+							tmp2.submat(midSeventyFive);
 							double count = 0;
 							for (int j = midSeventyFive.x; j < midSeventyFive.x + midSeventyFive.size().width; j++) {
 								for (int k = midSeventyFive.y; k < midSeventyFive.y
@@ -330,7 +337,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 							if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
 									&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250 && count < 150) {
-								System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
+								//System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
 
 								if (r.area() > 7000) {
 
@@ -362,7 +369,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 						Imgproc.rectangle(orig, boundingRect2.get(maxId).tl(), boundingRect2.get(maxId).br(),
 								new Scalar(255, 0, 0), 1);
-						Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(count) + ".jpg", frame);
+						Imgcodecs.imwrite("C:\\opencv3.0.0\\" + String.valueOf(mainLoopCount) + ".jpg", frame);
 						Imgproc.line(orig,
 								new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 0),
 								new Point(boundingRect2.get(maxId).x + boundingRect2.get(maxId).width / 2, 10000),
@@ -383,7 +390,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 					mainImage.pushImage(finalMat);
 					mainImage.repaint();
 
-					System.out.println("--------End: " + (System.currentTimeMillis() - start) + "---------");
+					//System.out.println("--------End: " + (System.currentTimeMillis() - start) + "---------");
 					if (System.currentTimeMillis() - start < 30) {
 						try {
 							Thread.sleep((long) (30 - (System.currentTimeMillis() - start)));
@@ -400,7 +407,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 			frame.copyTo(orig);
 			// Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
 			this.mainImage.pushImage(orig);
-			System.out.println(orig.size());
+			//System.out.println(orig.size());
 			if (this.clickCount != oldClickCount) {
 
 				this.H_MIN = (int) orig.get(mouseX, mouseY)[0];
@@ -409,7 +416,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 				this.H_MAX = (int) orig.get(mouseX, mouseY)[0];
 				this.S_MAX = (int) orig.get(mouseX, mouseY)[1];
 				this.V_MAX = (int) orig.get(mouseX, mouseY)[2];
-				System.out.println(H_MIN);
+				//System.out.println(H_MIN);
 				this.oldClickCount = 0;
 				output.println(String.valueOf(new Scalar(H_MIN, S_MIN, V_MIN)));
 				clickCount = 0;
@@ -451,12 +458,12 @@ public class VisionProcess implements KeyListener, MouseListener {
 			H_MAX = Integer.parseInt(reader.readLine());
 			S_MAX = Integer.parseInt(reader.readLine());
 			V_MAX = Integer.parseInt(reader.readLine());
-			System.out.println(H_MIN + " " + H_MAX + " " + V_MIN + " " + V_MAX + " " + S_MIN + " " + S_MAX);
+			//System.out.println(H_MIN + " " + H_MAX + " " + V_MIN + " " + V_MAX + " " + S_MIN + " " + S_MAX);
 			cameraAddr = reader.readLine();
 			serialPort = reader.readLine();
 			offset = Double.parseDouble(reader.readLine());
 			this.isAxis = reader.readLine().contains("AXIS");
-			System.out.println(isAxis);
+			//System.out.println(isAxis);
 			reader.close();
 			output.println("Done");
 		} else {
@@ -484,6 +491,10 @@ public class VisionProcess implements KeyListener, MouseListener {
 	public void initializeSerialConnection(String port) {
 
 	}
+	
+	public void updateSmartDashboardValues(){
+	//	this.shooterPercent = visionTable.getNumber(")
+	}
 
 	public void onLoad() {
 		try {
@@ -492,7 +503,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 			e.printStackTrace();
 		}
-		System.out.println("load");
+		//System.out.println("load");
 	}
 
 	public void onAxis() {
@@ -501,7 +512,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		onSave(true);
 		state = INIT;
 
-		System.out.println("axis");
+		//System.out.println("axis");
 	}
 
 	public void onLaptop() {
@@ -509,7 +520,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		camera.release();
 		this.onSave(false);
 		this.state = INIT;
-		System.out.println("laptop");
+		//System.out.println("laptop");
 	}
 
 	public void onCalib() {
@@ -518,7 +529,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		thresholdWindow.setVisible(true);
 		state = CALIBRATE;
 
-		System.out.println("calib");
+		//System.out.println("calib");
 	}
 
 	public void onDebug() {
@@ -528,13 +539,13 @@ public class VisionProcess implements KeyListener, MouseListener {
 			thresholdWindow.setVisible(true);
 			state = DEBUG;
 		}
-		System.out.println("debug");
+		//System.out.println("debug");
 	}
 
 	public void onReconnect() {
 		this.state = CONNECT_ROBOT;
 
-		System.out.println("reconnect");
+		//System.out.println("reconnect");
 	}
 
 	private void onSave(boolean axis) {
@@ -622,7 +633,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 			addWindowListener(new WindowAdapter() {
 				public void windowClosing(WindowEvent e) {
-					System.out.println("NOTHING");
+					//System.out.println("NOTHING");
 				}
 			});
 		}
@@ -672,8 +683,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 	@Override
 	public void mouseClicked(MouseEvent mouse) {
-		System.out.println(mouse.getX());
-		System.out.println(mouse.getY());
+		//System.out.println(mouse.getX());
+		//System.out.println(mouse.getY());
 		this.mouseX = mouse.getX();
 		this.mouseY = mouse.getY();
 		this.clickCount = mouse.getClickCount();

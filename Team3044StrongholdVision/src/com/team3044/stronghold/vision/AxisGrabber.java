@@ -1,9 +1,15 @@
 package com.team3044.stronghold.vision;
 
-import java.util.ArrayList;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
+
+import com.team3044.stronghold.gui.VisionProcess;
 
 public class AxisGrabber implements Runnable{
 
@@ -15,7 +21,9 @@ public class AxisGrabber implements Runnable{
 	private double[] timeTags = new double[3];
 	private int i = 0, j = 2;
 	
-	public AxisGrabber(VideoCapture capture) throws CameraIsNotOpenException{
+	VisionProcess p;
+	public AxisGrabber(VideoCapture capture, VisionProcess p) throws CameraIsNotOpenException{
+		this.p = p;
 		this.cap = capture;
 		if(!cap.isOpened()){
 			this.isReady = false;
@@ -51,11 +59,21 @@ public class AxisGrabber implements Runnable{
 	public Mat[] getBuffer(){
 		return buffer;
 	}
+	long averageTime = 0;
+	long minTime = 0;
+	long maxTime = 0;
+	int count = 0;
 	
 	@Override
 	public void run() {
+		long timeToRun = System.currentTimeMillis();
 		while(running){
-			cap.read(buffer[i]);
+
+			timeToRun = System.currentTimeMillis();
+			Mat temp = new Mat();
+			cap.read(temp);
+			buffer[i] = temp;
+			System.out.println("RUN");
 			timeTags[i] = System.currentTimeMillis();
 			
 			j++;
@@ -67,7 +85,39 @@ public class AxisGrabber implements Runnable{
 			if(i > 2){
 				i = 0;
 			}
+			
+			long tmp = (System.currentTimeMillis() - timeToRun);
+			if (tmp >= 10){
+			averageTime += tmp;
+			if(tmp > maxTime){
+				maxTime = tmp;
+			}
+			if(tmp < minTime){
+				minTime = tmp;
+			}
+			count += 1;
+			}
+			
+			if(count > 200){
+				break;
+			}
+
 		}
+		BufferedWriter writer;
+		System.out.println("Writing");
+		try {
+			writer = Files.newBufferedWriter(Paths.get(System.getenv("APPDATA") + "\\3044Vision\\out.txt"),
+					StandardOpenOption.WRITE);
+			writer.write("avg: " + String.valueOf(averageTime/count) + "\n" + "min: "
+					+ String.valueOf(minTime) + "\n Max: " + String.valueOf(maxTime));
+
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		
 	}
 	
