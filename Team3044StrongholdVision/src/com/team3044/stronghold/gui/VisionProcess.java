@@ -63,7 +63,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	int mouseY = 0;
 	int oldX = 0;
 	int oldY = 0;
-	
+
 	int H_MIN = 0, S_MIN = 0, V_MIN = 0;
 	int H_MAX = 180, S_MAX = 255, V_MAX = 255;
 	double offset = 9;
@@ -76,7 +76,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 	ConsoleWindow output = new ConsoleWindow("Console", 500, 500, this, false);
 
 	private String cameraAddr = "http://10.30.44.20/axis-cgi/mjpg/video.cgi?test.mjpeg";
-	private String serialPort = "COM5";
 
 	Mat frame = new Mat();
 	Mat blank = new Mat();
@@ -108,6 +107,10 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 	int countDebug = 0;
 	public ConsoleWindow console;
+	private double shooterPercent;
+	private boolean isPIDEnabled;
+	private boolean ballIn;
+
 	public VisionProcess() {
 		thresholdWindow.setVisible(false);
 		selector.setVisible(true);
@@ -185,10 +188,10 @@ public class VisionProcess implements KeyListener, MouseListener {
 				}
 			} else {
 				this.camera = new VideoCapture(0);
-				
+
 				if (camera.isOpened()) {
 					try {
-						grabber = new AxisGrabber(camera,this);
+						grabber = new AxisGrabber(camera, this);
 						Thread t = new Thread(grabber);
 						t.start();
 					} catch (CameraIsNotOpenException e) {
@@ -228,7 +231,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 					Files.createDirectories(Paths.get("C:\\Opencv3.0.0\\images\\" + Date.from(Instant.now()).getHours()
 							+ "\\" + Date.from(Instant.now()).getMinutes()));
 				} catch (IOException e) {
-					
+
 					e.printStackTrace();
 				}
 			}
@@ -236,12 +239,11 @@ public class VisionProcess implements KeyListener, MouseListener {
 					+ Date.from(Instant.now()).getMinutes() + "\\" + countDebug + ".jpg", noProcessing);
 		case MAIN_LOOP: {
 
-			
 			mainLoopCount += 1;
-			
+
 			Mat temporary = new Mat();
-			if ((temporary = grabber.getBuffer()[grabber.getJ()]) != null && 
-					grabber.getTimeStamps()[grabber.getJ()] != 10) {
+			if ((temporary = grabber.getBuffer()[grabber.getJ()]) != null
+					&& grabber.getTimeStamps()[grabber.getJ()] != 10) {
 				temporary.copyTo(frame);
 				if (state == DEBUG)
 					frame.copyTo(noProcessing);
@@ -337,8 +339,6 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 							if (Core.sumElems(tmp2.submat(r)).val[0] / r.area() > 75
 									&& Core.sumElems(tmp2.submat(r)).val[0] / r.area() < 250 && count < 150) {
-								//System.out.println("Area: " + Core.sumElems(tmp2.submat(r)).val[0] / r.area());
-
 								if (r.area() > 7000) {
 
 								} else {
@@ -390,7 +390,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 					mainImage.pushImage(finalMat);
 					mainImage.repaint();
 
-					//System.out.println("--------End: " + (System.currentTimeMillis() - start) + "---------");
+					// System.out.println("--------End: " +
+					// (System.currentTimeMillis() - start) + "---------");
 					if (System.currentTimeMillis() - start < 30) {
 						try {
 							Thread.sleep((long) (30 - (System.currentTimeMillis() - start)));
@@ -407,7 +408,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 			frame.copyTo(orig);
 			// Imgproc.cvtColor(this.frame, this.orig, Imgproc.COLOR_BGR2HSV);
 			this.mainImage.pushImage(orig);
-			//System.out.println(orig.size());
+			// System.out.println(orig.size());
 			if (this.clickCount != oldClickCount) {
 
 				this.H_MIN = (int) orig.get(mouseX, mouseY)[0];
@@ -416,7 +417,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 				this.H_MAX = (int) orig.get(mouseX, mouseY)[0];
 				this.S_MAX = (int) orig.get(mouseX, mouseY)[1];
 				this.V_MAX = (int) orig.get(mouseX, mouseY)[2];
-				//System.out.println(H_MIN);
+				// System.out.println(H_MIN);
 				this.oldClickCount = 0;
 				output.println(String.valueOf(new Scalar(H_MIN, S_MIN, V_MIN)));
 				clickCount = 0;
@@ -458,12 +459,12 @@ public class VisionProcess implements KeyListener, MouseListener {
 			H_MAX = Integer.parseInt(reader.readLine());
 			S_MAX = Integer.parseInt(reader.readLine());
 			V_MAX = Integer.parseInt(reader.readLine());
-			//System.out.println(H_MIN + " " + H_MAX + " " + V_MIN + " " + V_MAX + " " + S_MIN + " " + S_MAX);
+
 			cameraAddr = reader.readLine();
-			serialPort = reader.readLine();
+			reader.readLine(); // Serial Port
 			offset = Double.parseDouble(reader.readLine());
 			this.isAxis = reader.readLine().contains("AXIS");
-			//System.out.println(isAxis);
+			// System.out.println(isAxis);
 			reader.close();
 			output.println("Done");
 		} else {
@@ -491,9 +492,14 @@ public class VisionProcess implements KeyListener, MouseListener {
 	public void initializeSerialConnection(String port) {
 
 	}
-	
-	public void updateSmartDashboardValues(){
-	//	this.shooterPercent = visionTable.getNumber(")
+
+	public void updateSmartDashboardValues() {
+		if (visionTable.isConnected()) {
+			this.shooterPercent = visionTable.getNumber("SSPEED",0);
+			this.isPIDEnabled = visionTable.getBoolean("PID",true);
+			this.ballIn = visionTable.getBoolean("BALL",false);
+		}
+		
 	}
 
 	public void onLoad() {
@@ -503,7 +509,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 			e.printStackTrace();
 		}
-		//System.out.println("load");
+		// System.out.println("load");
 	}
 
 	public void onAxis() {
@@ -512,7 +518,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		onSave(true);
 		state = INIT;
 
-		//System.out.println("axis");
+		// System.out.println("axis");
 	}
 
 	public void onLaptop() {
@@ -520,7 +526,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		camera.release();
 		this.onSave(false);
 		this.state = INIT;
-		//System.out.println("laptop");
+		// System.out.println("laptop");
 	}
 
 	public void onCalib() {
@@ -529,7 +535,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 		thresholdWindow.setVisible(true);
 		state = CALIBRATE;
 
-		//System.out.println("calib");
+		// System.out.println("calib");
 	}
 
 	public void onDebug() {
@@ -539,13 +545,13 @@ public class VisionProcess implements KeyListener, MouseListener {
 			thresholdWindow.setVisible(true);
 			state = DEBUG;
 		}
-		//System.out.println("debug");
+		// System.out.println("debug");
 	}
 
 	public void onReconnect() {
 		this.state = CONNECT_ROBOT;
 
-		//System.out.println("reconnect");
+		// System.out.println("reconnect");
 	}
 
 	private void onSave(boolean axis) {
@@ -580,6 +586,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 	}
 
 	private class OptionSelector extends JFrame implements ActionListener {
+
 		private VisionProcess process;
 
 		public OptionSelector(String name, int width, int height, VisionProcess process) {
@@ -633,7 +640,7 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 			addWindowListener(new WindowAdapter() {
 				public void windowClosing(WindowEvent e) {
-					//System.out.println("NOTHING");
+					// System.out.println("NOTHING");
 				}
 			});
 		}
@@ -683,8 +690,8 @@ public class VisionProcess implements KeyListener, MouseListener {
 
 	@Override
 	public void mouseClicked(MouseEvent mouse) {
-		//System.out.println(mouse.getX());
-		//System.out.println(mouse.getY());
+		// System.out.println(mouse.getX());
+		// System.out.println(mouse.getY());
 		this.mouseX = mouse.getX();
 		this.mouseY = mouse.getY();
 		this.clickCount = mouse.getClickCount();
